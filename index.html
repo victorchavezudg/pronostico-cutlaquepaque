@@ -1456,6 +1456,7 @@
   </div>
   <div style="margin-top:10px; font-size:0.78rem; opacity:0.70; font-style:italic;">
     Página creada por el <strong style="color:white;">Dr. Víctor Manuel Chávez Pérez</strong>
+    y la <strong style="color:white;">Dra. Citlalli Almaguer Gómez</strong>
   </div>
 </footer>
 <script>document.getElementById("footer-year").textContent = new Date().getFullYear();</script>
@@ -2840,115 +2841,4 @@ function generarLeyendaLSTdesdeNASA(fecha) {
 }
 
 function mostrarLeyendaLST(visible) {
-  document.getElementById("leyenda-temperatura").style.display = visible ? "none" : "";
-  document.getElementById("leyenda-lst").classList.toggle("visible", visible);
-  document.getElementById("lst-panel").classList.toggle("visible", visible);
-}
-
-function cargarLSTCapaFecha(fechaStr) {
-  if (capaLST) { mapaLeaflet.removeLayer(capaLST); capaLST = null; }
-  const url = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Land_Surface_Temp_Day/default/${fechaStr}/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png`;
-  capaLST = L.tileLayer(url, {
-    opacity: 0.80, zIndex: 6, maxZoom: 7,
-    attribution: '🌡️ <a href="https://nasa.gov" target="_blank">NASA MODIS · LST</a>'
-  }).addTo(mapaLeaflet);
-  document.getElementById("lst-fecha-display").textContent = fechaStr;
-  document.getElementById("btn-lst").textContent = `🌡️ Temp. Sup. ${fechaStr.slice(5)}`; // MM-DD
-  // Generar leyenda desde los colores reales del tile NASA
-  generarLeyendaLSTdesdeNASA(fechaStr);
-}
-
-function cargarLSTHoy() {
-  const hoy = new Date();
-  // MODIS LST tiene ~1 día de retraso; usar ayer para asegurar disponibilidad
-  hoy.setDate(hoy.getDate() - 1);
-  const fechaStr = hoy.toISOString().slice(0, 10);
-  document.getElementById("lst-fecha").value = fechaStr;
-  cargarLSTCapaFecha(fechaStr);
-}
-
-function cargarLSTFecha() {
-  const fecha = document.getElementById("lst-fecha").value;
-  if (!fecha) { alert("Selecciona una fecha"); return; }
-  cargarLSTCapaFecha(fecha);
-}
-
-function toggleLST() {
-  const btn = document.getElementById("btn-lst");
-
-  if (lstActivo) {
-    if (capaLST) { mapaLeaflet.removeLayer(capaLST); capaLST = null; }
-    lstActivo = false;
-    btn.classList.remove("activo");
-    btn.textContent = "🌡️ Temp. Sup.";
-    restaurarMarcadores();
-    mostrarLeyendaLST(false);
-    return;
-  }
-
-  // Desactivar lluvia si estaba activa (capas se excluyen)
-  if (sateliteActivo) toggleSatelite();
-
-  ocultarMarcadores();
-  lstActivo = true;
-  btn.classList.add("activo");
-  mostrarLeyendaLST(true);
-
-  // Poner fecha de ayer por defecto y cargar
-  cargarLSTHoy();
-}
-
-/* ──────────────────────────────────────────
-   CARGA INICIAL → Mapa México + Guadalajara
-   ────────────────────────────────────────── */
-window.addEventListener("load", () => {
-  // Construir índice de búsqueda con todas las ciudades de todos los estados
-  window.CIUDADES_BUSQUEDA = [];
-  ESTADOS.forEach(estado => {
-    estado.ciudades.forEach(c => {
-      window.CIUDADES_BUSQUEDA.push({
-        nombre: c.n,
-        lat: c.lat,
-        lon: c.lon,
-        estado: estado.nombre,
-        id: estado.id,
-        estadoObj: estado,
-      });
-    });
-    // Añadir el estado mismo como opción
-    window.CIUDADES_BUSQUEDA.push({
-      nombre: estado.nombre,
-      lat: estado.lat,
-      lon: estado.lon,
-      estado: estado.nombre,
-      id: estado.id,
-      esEstado: true,
-      estadoObj: estado,
-    });
-  });
-
-  // Iniciar mapa con marcadores de los 32 estados
-  cargarDatosMapa();
-
-
-
-  // Pronóstico inicial: URL params > localStorage > Guadalajara por defecto
-  const _urlParams   = new URLSearchParams(window.location.search);
-  const _ciudadURL   = (() => {
-    const c = _urlParams.get('ciudad');
-    const la = parseFloat(_urlParams.get('lat'));
-    const lo = parseFloat(_urlParams.get('lon'));
-    return (c && !isNaN(la) && !isNaN(lo)) ? { nombre: c, lat: la, lon: lo } : null;
-  })();
-  const _ciudadGuardada = (() => {
-    try { const s = localStorage.getItem('ultimaCiudad'); return s ? JSON.parse(s) : null; }
-    catch(e) { return null; }
-  })();
-  const ciudadInicial = _ciudadURL || _ciudadGuardada || { nombre: "Guadalajara", lat: 20.6597, lon: -103.3496 };
-  document.getElementById("input-municipio").value = ciudadInicial.nombre;
-  buscarMunicipio(ciudadInicial);
-});
-
-</script>
-</body>
-</html>
+  document.ge
