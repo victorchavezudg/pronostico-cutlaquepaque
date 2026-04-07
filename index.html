@@ -1,0 +1,2860 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pronóstico Climatológico de México | CU Tlaquepaque - UDG</title>
+  <link rel="icon" type="image/svg+xml" href="BG_escudo-header-01.svg" />
+  <link rel="shortcut icon" type="image/svg+xml" href="BG_escudo-header-01.svg" />
+  <!-- Meta tags SEO y Open Graph -->
+  <meta name="description" content="Pronóstico del clima para Jalisco y México. Temperatura, precipitación y mapas en tiempo real. Centro de Estudios Medioambientales y de Servicios Académicos y Comunitarios — CU Tlaquepaque, UDG." />
+  <meta name="author" content="Centro de Estudios Medioambientales y de Servicios Académicos y Comunitarios, CU Tlaquepaque — UDG" />
+  <meta name="keywords" content="pronóstico clima Jalisco, temperatura Guadalajara, lluvia Jalisco, climatología UDG, CU Tlaquepaque, tiempo México" />
+  <!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:title"       content="Pronóstico Climatológico | CU Tlaquepaque - UDG" />
+  <meta property="og:description" content="Consulta el pronóstico del tiempo para Jalisco: temperatura, lluvia y mapas satelitales en tiempo real. Centro de Estudios Medioambientales — CU Tlaquepaque." />
+  <meta property="og:url"         content="https://cutlaquepaque.udg.mx/clima" />
+  <meta property="og:image"       content="https://cutlaquepaque.udg.mx/clima/preview.png" />
+  <meta property="og:locale"      content="es_MX" />
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Pronóstico Climatológico | CU Tlaquepaque - UDG" />
+  <meta name="twitter:description" content="Temperatura, lluvia y mapas satelitales en tiempo real para Jalisco. Centro de Estudios Medioambientales — CU Tlaquepaque." />
+  <meta name="twitter:image"       content="https://cutlaquepaque.udg.mx/clima/preview.png" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- D3.js para contornos -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+  <style>
+    /* ===== VARIABLES Y RESET ===== */
+    :root {
+      /* Paleta CUTlaquepaque */
+      --azul-udg:      #1B3D6F;   /* Barra UDG superior */
+      --verde-olivo:   #5A6B2A;   /* "CU" del logo */
+      --verde-oscuro:  #3D4A1C;   /* Hover / dark shade */
+      --terracota:     #B85A30;   /* "TLAQUE" del logo — acento principal */
+      --terracota-claro:#D4713D;
+      --gris-nav:      #525252;   /* Barra de navegación */
+      --gris-oscuro:   #3A3A3A;
+      --beige:         #F5F0EA;   /* Fondo suave */
+      --fondo:         #F5F0EA;   /* alias para --beige */
+      --tarjeta:       #FFFFFF;
+      --texto:         #2A2A2A;
+      --texto-suave:   #666055;
+      --borde:         #DDD5C8;
+      --dorado:        #B85A30;   /* alias → terracota para links */
+      --dorado-claro:  #D4713D;   /* alias → terracota-claro */
+      --azul-medio:    #5A6B2A;   /* alias → verde-olivo */
+      --alerta-verde:  #1B7A3E;
+      --amarillo:      #D97706;
+      --rojo:          #C0392B;
+      --sombra:        0 2px 12px rgba(90,107,42,0.13);
+      --radio:         10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--fondo);
+      color: var(--texto);
+      min-height: 100vh;
+    }
+    a { color: var(--dorado); text-decoration: none; }
+
+    /* ===== HEADER ===== */
+    header {
+      background: var(--gris-oscuro);
+      color: white;
+      padding: 0;
+      box-shadow: 0 3px 16px rgba(0,0,0,0.30);
+    }
+    /* Barra UDG principal — estilo cutlaquepaque.udg.mx */
+    .header-udg-main {
+      background: linear-gradient(135deg, var(--gris-oscuro) 0%, var(--verde-oscuro) 60%, var(--verde-olivo) 100%);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 75px;
+      position: relative;
+      z-index: 10;
+      overflow: hidden;
+    }
+    .header-udg-main::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 66.67%;
+      background: var(--azul-udg);
+      z-index: 0;
+    }
+    .header-udg-logo-link {
+      display: flex;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .udg-svg-logo {
+      height: 59px;
+      width: auto;
+      display: block;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 6px 32px 6px 0;
+      background: linear-gradient(135deg, var(--gris-oscuro) 0%, var(--verde-oscuro) 60%, var(--verde-olivo) 100%);
+      border-bottom: 3px solid var(--terracota);
+      min-height: 80px;
+      overflow: hidden;
+    }
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-shrink: 0;
+    }
+    .logo-escudo {
+      height: 74px;
+      width: auto;
+      flex-shrink: 0;
+      display: block;
+      mix-blend-mode: screen;
+    }
+    .logo-texto-wrap {
+      padding: 5px 0 4px 16px;
+    }
+    .logo-texto h1 {
+      font-size: 1.73rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.25;
+    }
+    .logo-texto p {
+      font-size: 1.28rem;
+      opacity: 0.85;
+      margin-top: 3px;
+      font-style: italic;
+    }
+    .header-subtitle {
+      padding: 8px 32px 10px;
+      font-size: 0.82rem;
+      opacity: 0.80;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      background: var(--gris-nav);
+    }
+    .header-subtitle span { display: flex; align-items: center; gap: 5px; }
+
+    /* ===== BARRA DE NAVEGACIÓN ===== */
+    .navbar-cutlaque {
+      background: var(--gris-nav);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0;
+      padding: 0 16px;
+      border-bottom: 2px solid var(--terracota);
+    }
+    .navbar-cutlaque a {
+      color: rgba(255,255,255,0.88);
+      text-decoration: none;
+      padding: 10px 16px;
+      font-size: 0.83rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      transition: background 0.15s, color 0.15s;
+      display: block;
+      border-bottom: 2px solid transparent;
+    }
+    .navbar-cutlaque a:hover,
+    .navbar-cutlaque a.activo {
+      background: rgba(255,255,255,0.08);
+      color: white;
+      border-bottom: 2px solid var(--terracota-claro);
+    }
+    .navbar-cutlaque a.activo {
+      color: var(--terracota-claro);
+    }
+
+    /* ===== BUSCADOR ===== */
+    .buscador-seccion {
+      background: var(--verde-olivo);
+      padding: 20px 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: flex-end;
+    }
+    .campo-grupo {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .campo-grupo label {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.8);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .buscador-seccion input,
+    .buscador-seccion select {
+      background: white;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      padding: 9px 14px;
+      font-size: 0.95rem;
+      color: var(--texto);
+      outline: none;
+      min-width: 220px;
+      transition: border-color 0.2s;
+    }
+    .buscador-seccion input:focus,
+    .buscador-seccion select:focus { border-color: var(--dorado-claro); }
+    .btn-buscar {
+      background: var(--terracota);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 26px;
+      font-size: 0.97rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.12s;
+      align-self: flex-end;
+    }
+    .btn-buscar:hover { background: var(--terracota-claro); transform: translateY(-1px); }
+    .separador-busqueda {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.85rem;
+      align-self: center;
+      margin-top: 18px;
+      font-style: italic;
+    }
+    /* Autocomplete */
+    .autocomplete-container { position: relative; }
+    #lista-municipios {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1.5px solid var(--borde);
+      border-radius: 0 0 6px 6px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0,48,135,0.15);
+    }
+    #lista-municipios div {
+      padding: 9px 14px;
+      cursor: pointer;
+      font-size: 0.93rem;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.12s;
+    }
+    #lista-municipios div:hover { background: #EEF2F8; }
+    #lista-municipios div:last-child { border-bottom: none; }
+
+    /* ===== MAIN ===== */
+    main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 48px; }
+
+    /* ===== ESTADO INICIAL ===== */
+    #estado-inicial {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--texto-suave);
+    }
+    #estado-inicial .icono-grande { font-size: 5rem; margin-bottom: 16px; }
+    #estado-inicial h2 { font-size: 1.4rem; color: var(--verde-olivo); margin-bottom: 8px; }
+    #estado-inicial p { font-size: 0.95rem; max-width: 480px; margin: 0 auto; }
+
+    /* ===== LOADING ===== */
+    #loading {
+      display: none;
+      text-align: center;
+      padding: 60px;
+      color: var(--verde-olivo);
+    }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 5px solid var(--borde);
+      border-top-color: var(--terracota);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 18px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== RESULTADO ===== */
+    #resultado { display: none; }
+
+    /* Cabecera del municipio */
+    .municipio-titulo {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .municipio-titulo h2 {
+      font-size: 1.55rem;
+      color: var(--verde-oscuro);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .municipio-titulo .actualizacion {
+      font-size: 0.80rem;
+      color: var(--texto-suave);
+      background: white;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--borde);
+    }
+
+    /* ===== CONDICIONES ACTUALES ===== */
+    .actuales-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 20px;
+      background: linear-gradient(135deg, var(--gris-oscuro) 0%, var(--verde-oscuro) 50%, var(--verde-olivo) 100%);
+      border-radius: var(--radio);
+      padding: 26px 28px;
+      color: white;
+      margin-bottom: 22px;
+      box-shadow: var(--sombra);
+    }
+    .actuales-principal {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 150px;
+      border-right: 1px solid rgba(255,255,255,0.2);
+      padding-right: 24px;
+    }
+    .actuales-icono { font-size: 4.5rem; line-height: 1; margin-bottom: 6px; }
+    .actuales-temp { font-size: 3.2rem; font-weight: 700; line-height: 1; }
+    .actuales-desc { font-size: 0.88rem; opacity: 0.85; text-align: center; margin-top: 4px; }
+    .actuales-sensacion { font-size: 0.80rem; opacity: 0.70; margin-top: 2px; }
+    .actuales-detalles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 14px;
+      padding-left: 10px;
+      align-content: center;
+    }
+    .detalle-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .detalle-item .etiqueta {
+      font-size: 0.73rem;
+      opacity: 0.65;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .detalle-item .valor {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .detalle-item .valor-sub {
+      font-size: 0.78rem;
+      opacity: 0.75;
+    }
+
+    /* ===== PRONÓSTICO 7 DÍAS ===== */
+    .seccion-titulo {
+      font-size: 1.0rem;
+      font-weight: 700;
+      color: var(--verde-oscuro);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .seccion-titulo::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: var(--borde);
+      border-radius: 2px;
+    }
+    .pronostico-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .dia-card {
+      background: var(--tarjeta);
+      border-radius: var(--radio);
+      padding: 12px 8px 10px;
+      text-align: center;
+      box-shadow: var(--sombra);
+      border: 1.5px solid var(--borde);
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Barra de color superior según temperatura máx */
+    .dia-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--dia-color, var(--borde));
+      border-radius: var(--radio) var(--radio) 0 0;
+    }
+    .dia-card:hover, .dia-card.activo {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(90,107,42,0.18);
+      border-color: var(--terracota);
+    }
+    .dia-card.activo { background: #f8f4ee; }
+    .dia-nombre { font-size: 0.72rem; font-weight: 700; color: var(--verde-olivo); text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0.04em; }
+    .dia-fecha { font-size: 0.63rem; color: var(--texto-suave); margin-bottom: 7px; }
+    .dia-icono { font-size: 2rem; margin-bottom: 5px; line-height: 1; }
+    .dia-temps { display: flex; justify-content: center; align-items: baseline; gap: 5px; margin-bottom: 6px; }
+    .dia-max { font-size: 1.15rem; font-weight: 700; color: var(--rojo); }
+    .dia-min { font-size: 0.85rem; color: #5a88cc; }
+    /* Mini barra de temperatura */
+    .dia-tempbar-wrap { margin: 0 6px 6px; height: 4px; background: #e8e0d5; border-radius: 2px; overflow: hidden; }
+    .dia-tempbar { height: 100%; border-radius: 2px; background: linear-gradient(to right, #5a88cc, #ff8800); }
+    /* Mini barra de lluvia */
+    .dia-lluvia-wrap { margin: 4px 6px 2px; }
+    .dia-lluvia-label {
+      font-size: 0.63rem;
+      color: #1b6fa8;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3px;
+    }
+    .dia-lluvia-label.lluvia-alta { color: #0d4f7c; }
+    .dia-lluviabar-wrap { height: 4px; background: #e8e0d5; border-radius: 2px; overflow: hidden; }
+    .dia-lluviabar {
+      height: 100%;
+      border-radius: 2px;
+      background: linear-gradient(to right, #a8d8f0, #0d4f7c);
+      transition: width 0.4s ease;
+    }
+
+    /* ===== DETALLE DEL DÍA SELECCIONADO ===== */
+    #detalle-dia {
+      background: white;
+      border-radius: var(--radio);
+      border: 1.5px solid var(--borde);
+      padding: 22px 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--sombra);
+      display: none;
+    }
+    #detalle-dia h3 {
+      font-size: 1.05rem;
+      color: var(--verde-oscuro);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--borde);
+    }
+    .detalle-variables {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+    }
+    .variable-item {
+      background: var(--fondo);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .variable-item .var-icono { font-size: 1.6rem; }
+    .variable-item .var-info .var-nombre { font-size: 0.72rem; color: var(--texto-suave); text-transform: uppercase; letter-spacing: 0.05em; }
+    .variable-item .var-info .var-valor { font-size: 1.1rem; font-weight: 700; color: var(--azul-oscuro); }
+
+    /* ===== GRÁFICAS HORARIAS ===== */
+    #detalle-graficas {
+      margin-top: 20px;
+      border-top: 1px solid var(--borde);
+      padding-top: 16px;
+    }
+    #detalle-graficas h4 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--texto-suave);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 14px;
+    }
+    .graficas-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 700px) { .graficas-grid { grid-template-columns: 1fr; } }
+    .grafica-card {
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1.5px solid var(--borde);
+      padding: 12px 14px 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .grafica-card-titulo {
+      font-size: 0.70rem;
+      font-weight: 700;
+      color: var(--texto-suave);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .grafica-canvas-wrap { position: relative; height: 130px; }
+
+    /* ===== PANEL DE VARIABLES ADICIONALES ===== */
+    .panel-adicional {
+      background: white;
+      border-radius: var(--radio);
+      border: 1.5px solid var(--borde);
+      box-shadow: var(--sombra);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      cursor: pointer;
+      user-select: none;
+      background: var(--fondo);
+      border-bottom: 1px solid var(--borde);
+    }
+    .panel-header:hover { background: #E8EDD8; }
+    .panel-header h3 { font-size: 0.95rem; color: var(--verde-oscuro); font-weight: 700; }
+    .panel-toggle { font-size: 1.2rem; color: var(--terracota); transition: transform 0.2s; }
+    .panel-toggle.abierto { transform: rotate(180deg); }
+    .panel-contenido { display: none; padding: 18px 20px; }
+    .panel-contenido.visible { display: block; }
+
+    /* ===== TABLA HORARIA ===== */
+    .tabla-wrap { overflow-x: auto; }
+    table.horaria {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    table.horaria th {
+      background: var(--gris-nav);
+      color: white;
+      padding: 8px 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    table.horaria td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--borde);
+      color: var(--texto);
+    }
+    table.horaria tr:nth-child(even) td { background: var(--fondo); }
+    table.horaria tr:hover td { background: #E5EBF5; }
+
+    /* ===== ALERTAS ===== */
+    .alerta-box {
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.88rem;
+    }
+    .alerta-box.info { background: #EEF5E6; border-left: 4px solid var(--verde-olivo); }
+    .alerta-box.precaucion { background: #FEF3C7; border-left: 4px solid var(--amarillo); }
+    .alerta-box.peligro { background: #FEE2E2; border-left: 4px solid var(--rojo); }
+    .alerta-icono { font-size: 1.4rem; }
+
+    /* ===== FUENTE ===== */
+    .fuente-datos {
+      font-size: 0.75rem;
+      color: var(--texto-suave);
+      text-align: center;
+      margin-top: 10px;
+      padding-top: 16px;
+      border-top: 1px solid var(--borde);
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: var(--gris-oscuro);
+      color: rgba(255,255,255,0.75);
+      text-align: center;
+      padding: 28px 32px 22px;
+      font-size: 0.80rem;
+      line-height: 1.9;
+    }
+    footer strong { color: white; font-size: 0.87rem; }
+    footer a { color: #c8a87a; text-decoration: none; }
+    footer a:hover { color: white; text-decoration: underline; }
+    .footer-divider {
+      display: inline-block;
+      margin: 0 10px;
+      opacity: 0.35;
+    }
+    .footer-links {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+    .footer-copy {
+      margin-top: 12px;
+      font-size: 0.70rem;
+      opacity: 0.45;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      padding-top: 10px;
+    }
+
+    /* ===== ERROR ===== */
+    #error-msg {
+      display: none;
+      background: #FEE2E2;
+      border: 1.5px solid #C0392B;
+      border-radius: 8px;
+      padding: 16px 20px;
+      color: #7B1C1C;
+      text-align: center;
+      margin: 24px 0;
+    }
+
+    /* ===== MAPA ===== */
+    .mapa-seccion {
+      background: white;
+      border-bottom: 3px solid var(--borde);
+      padding: 0;
+      position: relative;
+    }
+    .mapa-titulo-bar {
+      background: var(--gris-nav);
+      color: white;
+      padding: 8px 32px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: 0.05em;
+    }
+    .mapa-titulo-bar span { opacity: 0.7; font-weight: 400; font-style: italic; }
+    #mapa-jalisco {
+      width: 100%;
+      height: 420px;
+      z-index: 1;
+    }
+    /* Marcador personalizado del mapa */
+    .marcador-clima {
+      background: white;
+      border: 2px solid var(--terracota);
+      border-radius: 8px;
+      padding: 3px 7px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--texto);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      white-space: nowrap;
+      cursor: pointer;
+      line-height: 1.4;
+      text-align: center;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .marcador-clima:hover { transform: scale(1.12); border-color: var(--verde-olivo); }
+    .marcador-clima.activo { border-color: var(--verde-olivo); background: #EEF5E6; }
+    .marcador-clima.marcador-destacado { transform: scale(1.35); border-width: 3px; border-color: var(--verde-olivo); background: var(--verde-olivo); color: #fff; box-shadow: 0 2px 10px rgba(90,107,42,0.5); }
+    .marcador-clima.marcador-destacado .mc-nombre { color: #ddeebb; }
+    .marcador-clima.marcador-destacado .mc-temp { color: #fff; }
+    .marcador-clima .mc-temp { font-size: 0.88rem; color: var(--rojo); }
+    .marcador-clima .mc-nombre { font-size: 0.62rem; color: var(--texto-suave); display: block; font-weight: 400; }
+    .mapa-leyenda {
+      position: absolute;
+      bottom: 24px;
+      right: 10px;
+      z-index: 1000;
+      background: white;
+      border: 1px solid var(--borde);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.72rem;
+      box-shadow: var(--sombra);
+    }
+    .mapa-leyenda b { display: block; margin-bottom: 4px; color: var(--verde-oscuro); }
+    .leyenda-item { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+    .leyenda-dot { width: 10px; height: 10px; border-radius: 50%; }
+    /* Control de capas del mapa */
+    .mapa-controles {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .btn-capa {
+      background: white;
+      border: 2px solid var(--borde);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--texto);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-capa:hover { border-color: var(--terracota); color: var(--terracota); }
+    .btn-capa.activo { background: var(--verde-olivo); color: white; border-color: var(--verde-olivo); }
+    /* Leyenda de isotermas */
+    .leyenda-isotermas {
+      display: none;
+    }
+    .leyenda-isotermas.visible {
+      display: block;
+    }
+    /* Leyenda de radar */
+    .leyenda-radar {
+      display: none;
+    }
+    .leyenda-radar.visible {
+      display: block;
+    }
+    /* Leyenda temperatura superficial */
+    .leyenda-lst { display: none; }
+    .leyenda-lst.visible { display: block; }
+    /* La leyenda LST */
+    #leyenda-lst {
+      min-width: 160px;
+    }
+    .lst-barra {
+      width: 150px;
+      height: 12px;
+      border-radius: 4px;
+      margin: 5px 0 2px;
+      border: 1px solid #ccc;
+      background: linear-gradient(to right,
+        rgb(85,  0, 255)   0%,
+        rgb(0,  51, 255)  17%,
+        rgb(0, 189, 255)  33%,
+        rgb(0, 255, 255)  50%,
+        rgb(77, 255,  77) 67%,
+        rgb(200,255,   0) 83%,
+        rgb(255,199,   0) 100%
+      );
+    }
+    .lst-marcas {
+      display: flex;
+      justify-content: space-between;
+      width: 150px;
+      font-size: 0.57rem;
+      color: var(--texto-suave);
+      margin-bottom: 2px;
+    }
+    .lst-ticks {
+      display: flex;
+      justify-content: space-between;
+      width: 150px;
+      margin-bottom: 1px;
+    }
+    .lst-tick {
+      width: 1px;
+      height: 5px;
+      background: #aaa;
+    }
+    /* ── Estilo compartido para paneles de capa de mapa ── */
+    #lst-panel, #radar-panel {
+      display: none;
+      position: absolute;
+      bottom: 38px;
+      left: 10px;
+      z-index: 1001;
+      background: rgba(255,255,255,0.97);
+      border: 1.5px solid var(--borde);
+      border-radius: 10px;
+      padding: 0;
+      box-shadow: var(--sombra);
+      font-size: 0.75rem;
+      min-width: 280px;
+      text-align: center;
+      backdrop-filter: blur(6px);
+      overflow: hidden;
+    }
+    #lst-panel.visible  { display: block; }
+    #radar-panel.visible { display: block; }
+
+    /* Cabecera coloreada de cada panel */
+    .panel-capa-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px 7px;
+      font-weight: 700;
+      font-size: 0.76rem;
+      border-bottom: 1.5px solid var(--borde);
+    }
+    #lst-panel   .panel-capa-header { background: rgba(90,107,42,0.10); color: var(--verde-oscuro); }
+    #radar-panel .panel-capa-header { background: rgba(27,61,111,0.09); color: var(--azul-udg); }
+    .panel-capa-header span { opacity: 0.75; font-weight: 400; }
+
+    /* Cuerpo del panel */
+    .panel-capa-body { padding: 8px 14px 10px; }
+
+    /* Subsección (reemplaza radar-hist-sep) */
+    .panel-capa-sep {
+      margin: 6px -14px 6px;
+      padding: 4px 14px;
+      background: rgba(0,0,0,0.04);
+      border-top: 1px solid var(--borde);
+      border-bottom: 1px solid var(--borde);
+      font-size: 0.68rem;
+      color: var(--texto-suave);
+      text-align: left;
+      font-weight: 600;
+    }
+
+    /* Timeline radar */
+    #radar-timeline {
+      display: flex;
+      gap: 3px;
+      justify-content: center;
+      margin: 4px 0 5px;
+    }
+    .radar-tick {
+      height: 8px;
+      flex: 1;
+      background: #dde0e8;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .radar-tick.activo { background: var(--azul-udg); }
+    .radar-tick:hover  { background: var(--terracota); }
+    .radar-anim-btns   { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 2px; }
+
+    /* Botones de los paneles */
+    .radar-btn {
+      background: var(--beige);
+      border: 1.5px solid var(--borde);
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 0.80rem;
+      font-weight: 600;
+      transition: all 0.15s;
+      color: var(--texto);
+    }
+    .radar-btn:hover  { background: var(--verde-olivo); color: white; border-color: var(--verde-olivo); }
+    .radar-btn.activo { background: var(--azul-udg);    color: white; border-color: var(--azul-udg); }
+
+    #radar-hora-display { font-size: 0.78rem; color: var(--azul-udg); font-weight: 600; }
+    .radar-hist-row { display: flex; align-items: center; gap: 5px; justify-content: center; flex-wrap: wrap; }
+    .radar-hist-row input[type=date], .radar-hist-row input[type=time] {
+      border: 1.5px solid var(--borde);
+      border-radius: 5px;
+      padding: 3px 6px;
+      font-size: 0.72rem;
+      background: white;
+      color: var(--texto);
+    }
+    .radar-hist-row label { font-size: 0.70rem; color: var(--texto-suave); }
+    .radar-barra {
+      width: 110px;
+      height: 10px;
+      border-radius: 4px;
+      margin: 5px 0 3px;
+      background: linear-gradient(to right,
+        #b3f0ff 0%,
+        #40d4ff 15%,
+        #009fcc 30%,
+        #00cc44 45%,
+        #ffff00 58%,
+        #ff8800 72%,
+        #ff2200 85%,
+        #aa00cc 100%
+      );
+    }
+    .radar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.58rem;
+      color: var(--texto-suave);
+    }
+    .leyenda-gradiente {
+      width: 120px;
+      height: 12px;
+      border-radius: 4px;
+      margin: 4px 0;
+      background: linear-gradient(to right, #2166ac, #4393c3, #92c5de, #d1e5f0, #fddbc7, #f4a582, #d6604d, #b2182b);
+    }
+    .leyenda-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.62rem;
+      color: var(--texto-suave);
+    }
+    /* SVG de contornos */
+    #mapa-jalisco svg.contornos-svg {
+      position: absolute;
+      top: 0; left: 0;
+      pointer-events: none;
+    }
+    .cargando-mapa {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 500;
+      background: rgba(255,255,255,0.9);
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: var(--verde-oscuro);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .pronostico-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 700px) {
+      /* Header */
+      .header-udg-main { min-height: 58px; padding: 0 16px; }
+      .udg-svg-logo { height: 46px; }
+      .header-top { padding: 8px 16px; gap: 10px; min-height: 60px; }
+      .logo-escudo { height: 56px; }
+      .logo-texto h1 { font-size: 1.1rem; }
+      .logo-texto p  { font-size: 0.88rem; }
+      /* Navbar */
+      .navbar-cutlaque { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; padding: 0 6px; }
+      .navbar-cutlaque a { padding: 9px 10px; font-size: 0.75rem; white-space: nowrap; }
+      /* Buscador */
+      .buscador-seccion { padding: 14px 16px; flex-direction: column; gap: 10px; }
+      .buscador-seccion input, .buscador-seccion select { min-width: unset; width: 100%; }
+      .campo-grupo { width: 100%; }
+      .btn-buscar { width: 100%; padding: 11px; }
+      .separador-busqueda { display: none; }
+      /* Mapa */
+      #mapa-jalisco { height: 260px !important; }
+      .mapa-seccion { margin: 0 -4px; }
+      /* Actuales */
+      .actuales-grid { grid-template-columns: 1fr; }
+      .actuales-principal { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.2); padding-right: 0; padding-bottom: 16px; min-width: unset; }
+      .actuales-temp { font-size: 3.2rem; }
+      .actuales-detalles { grid-template-columns: 1fr 1fr; }
+      /* Pronóstico */
+      .pronostico-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .pronostico-card { padding: 10px 8px; }
+      /* Main */
+      main { padding: 14px 10px 40px; }
+      /* Tabla pronóstico */
+      table.pronostico-tabla { font-size: 0.75rem; }
+      table.pronostico-tabla th, table.pronostico-tabla td { padding: 6px 5px; }
+      /* Graficas */
+      .graficas-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 420px) {
+      .logo-texto h1 { font-size: 0.92rem; line-height: 1.2; }
+      .logo-texto p  { font-size: 0.78rem; }
+      .logo-escudo { height: 48px; }
+      .pronostico-grid { grid-template-columns: 1fr 1fr; }
+      .actuales-detalles { grid-template-columns: 1fr; }
+    }
+  </style>
+  <!-- Chart.js para gráficas horarias -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header>
+  <!-- Barra principal UdG (estilo cutlaquepaque.udg.mx) -->
+  <div class="header-udg-main">
+    <a href="https://www.udg.mx/" target="_blank" rel="noopener" class="header-udg-logo-link" title="Universidad de Guadalajara">
+      <img class="udg-svg-logo" src="BG_escudo-header-01.svg" alt="Universidad de Guadalajara — Red Universitaria e Institución Benemérita de Jalisco" />
+    </a>
+  </div>
+  <!-- Barra CU Tlaquepaque -->
+  <div class="header-top">
+    <div class="logo-area">
+      <a href="https://cutlaquepaque.udg.mx/" target="_blank" rel="noopener" title="Centro Universitario de Tlaquepaque">
+        <img class="logo-escudo" src="CUTLAQUEPAQUE.png" alt="CU Tlaquepaque" />
+      </a>
+      <div class="logo-texto-wrap">
+        <div class="logo-texto">
+          <h1>Centro de Estudios Medioambientales y de Servicios Académicos y Comunitarios</h1>
+          <p>Pronóstico Climatológico de México</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== BARRA DE NAVEGACIÓN ===== -->
+<nav class="navbar-cutlaque">
+  <a href="https://cutlaquepaque.udg.mx/" target="_blank" rel="noopener">Inicio</a>
+  <a href="https://cutlaquepaque.udg.mx/acerca-de" target="_blank" rel="noopener">Acerca de</a>
+  <a href="https://cutlaquepaque.udg.mx/oferta-academica" target="_blank" rel="noopener">Oferta Académica</a>
+  <a href="https://cutlaquepaque.udg.mx/noticias" target="_blank" rel="noopener">Noticias</a>
+  <a href="https://cutlaquepaque.udg.mx/agenda" target="_blank" rel="noopener">Agenda</a>
+  <a href="https://cutlaquepaque.udg.mx/multimedia" target="_blank" rel="noopener">Multimedia</a>
+  <a href="#" class="activo">🌤️ Clima</a>
+  <a href="https://cutlaquepaque.udg.mx/contacto" target="_blank" rel="noopener">Contacto</a>
+</nav>
+
+<!-- ===== MAPA ===== -->
+<div class="mapa-seccion">
+  <div class="mapa-titulo-bar">
+    🗺️ Mapa de México
+    <span id="mapa-subtitulo">— Haz clic en un estado para ver sus ciudades principales</span>
+  </div>
+  <div style="position:relative">
+    <div id="mapa-jalisco"></div>
+
+    <!-- Controles superiores del mapa -->
+    <div class="mapa-controles" style="display:flex;gap:6px">
+      <div id="btn-volver-wrap" style="display:none">
+        <button class="btn-capa activo" onclick="volverAMexico()">← Todos los estados</button>
+      </div>
+      <button class="btn-capa" id="btn-satelite" onclick="toggleSatelite()" title="Lluvia en tiempo real y datos históricos">🌧️ Lluvia</button>
+      <button class="btn-capa" id="btn-lst" onclick="toggleLST()" title="Temperatura superficial MODIS (NASA)">🌡️ Temp. Sup.</button>
+      <button class="btn-capa" id="btn-fullscreen" onclick="toggleFullscreen()" title="Pantalla completa">⛶ Pantalla completa</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="cargando-mapa" id="mapa-loading">
+      <div class="spinner" style="width:20px;height:20px;border-width:3px"></div>
+      <span id="mapa-loading-txt">Cargando datos del mapa...</span>
+    </div>
+
+    <!-- Leyenda temperatura (por defecto) -->
+    <div class="mapa-leyenda" id="leyenda-temperatura">
+      <b>Temperatura actual</b>
+      <div class="leyenda-item"><div class="leyenda-dot" style="background:#2196F3"></div> &lt; 18°C</div>
+      <div class="leyenda-item"><div class="leyenda-dot" style="background:#4CAF50"></div> 18–24°C</div>
+      <div class="leyenda-item"><div class="leyenda-dot" style="background:#FF9800"></div> 24–30°C</div>
+      <div class="leyenda-item"><div class="leyenda-dot" style="background:#F44336"></div> &gt; 30°C</div>
+    </div>
+    <!-- Leyenda radar (visible solo al activar radar) -->
+    <div class="mapa-leyenda leyenda-radar" id="leyenda-radar">
+      <b>🌧️ Lluvia / Precipitación</b>
+      <div class="radar-barra"></div>
+      <div class="radar-labels">
+        <span>Leve</span>
+        <span>Mod.</span>
+        <span>Fuerte</span>
+        <span>Extrema</span>
+      </div>
+      <div style="font-size:0.60rem;color:var(--texto-suave);margin-top:3px;">Fuente: RainViewer</div>
+    </div>
+
+    <!-- Leyenda temperatura superficial -->
+    <div class="mapa-leyenda leyenda-lst" id="leyenda-lst">
+      <b>🌡️ Temperatura Superficial del Suelo</b>
+      <!-- Canvas generado desde los tiles reales de NASA GIBS -->
+      <canvas id="lst-legend-canvas" width="150" height="12"
+        style="display:block;border-radius:4px;border:1px solid #ccc;margin:5px 0 2px;"></canvas>
+      <!-- Marcas de temperatura cada 10°C de -20 a 40°C -->
+      <div class="lst-ticks">
+        <div class="lst-tick"></div><div class="lst-tick"></div><div class="lst-tick"></div>
+        <div class="lst-tick"></div><div class="lst-tick"></div><div class="lst-tick"></div>
+        <div class="lst-tick"></div><div class="lst-tick"></div>
+      </div>
+      <div class="lst-marcas">
+        <span>-20</span>
+        <span>-10</span>
+        <span>0</span>
+        <span>10</span>
+        <span>20</span>
+        <span>30</span>
+        <span>40°C</span>
+      </div>
+      <div style="font-size:0.60rem;color:var(--texto-suave);margin-top:2px;">MODIS Terra · NASA GIBS · resolución diaria</div>
+    </div>
+
+    <!-- Panel selector de fecha LST -->
+    <div id="lst-panel">
+      <div class="panel-capa-header">
+        🌡️ Temp. Superficial &mdash; <span id="lst-fecha-display">hoy</span>
+      </div>
+      <div class="panel-capa-body">
+        <div class="radar-hist-row">
+          <label>Fecha:</label>
+          <input type="date" id="lst-fecha" />
+          <button class="radar-btn" onclick="cargarLSTFecha()">Ver</button>
+          <button class="radar-btn" onclick="cargarLSTHoy()">Hoy</button>
+        </div>
+        <div style="font-size:0.65rem;color:var(--texto-suave);margin-top:6px;">MODIS Terra · NASA GIBS · desde 2000 · resolución diaria</div>
+      </div>
+    </div>
+
+    <!-- Panel de animación / histórico de radar -->
+    <div id="radar-panel">
+      <div class="panel-capa-header">
+        🌧️ Lluvia &mdash; <span id="radar-hora-display">—</span>
+      </div>
+      <div class="panel-capa-body">
+        <div class="radar-hist-row">
+          <label>Fecha:</label>
+          <input type="date" id="radar-fecha-hist" />
+          <input type="time" id="radar-hora-hist" step="1800" value="12:00" style="display:none" />
+          <button class="radar-btn" onclick="cargarRadarHistorico()">Ver</button>
+          <button class="radar-btn" onclick="volverRadarTiempoReal()" title="Volver a tiempo real">Actual</button>
+        </div>
+        <div style="font-size:0.65rem;color:var(--texto-suave);margin-top:6px;">RainViewer (tiempo real) · NASA IMERG (histórico, desde 2014)</div>
+        <!-- Timeline y animación (ocultos, funciones JS activas) -->
+        <div id="radar-timeline" style="display:none"></div>
+        <button id="btn-radar-play" style="display:none"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BUSCADOR ===== -->
+<div class="buscador-seccion">
+  <!-- Por municipio -->
+  <div class="campo-grupo autocomplete-container">
+    <label for="input-municipio">Buscar ciudad o estado</label>
+    <input
+      type="text"
+      id="input-municipio"
+      placeholder="Ej: Guadalajara, Monterrey, Oaxaca..."
+      autocomplete="off"
+    />
+    <div id="lista-municipios"></div>
+  </div>
+
+  <div class="separador-busqueda">— o bien —</div>
+
+  <!-- Por código postal -->
+  <div class="campo-grupo">
+    <label for="input-cp">Código postal</label>
+    <input
+      type="text"
+      id="input-cp"
+      placeholder="Ej: 45500"
+      maxlength="5"
+      style="min-width:140px"
+    />
+  </div>
+
+  <button class="btn-buscar" onclick="buscarPorCP()">🔍 Buscar CP</button>
+  <button class="btn-buscar" onclick="buscarUbicacion()" style="background:var(--gris-nav);color:white">📍 Mi ubicación</button>
+</div>
+
+<!-- ===== MAIN ===== -->
+<main>
+  <!-- Estado inicial -->
+  <div id="estado-inicial">
+    <div class="icono-grande">🌤️</div>
+    <h2>Selecciona una ciudad de México</h2>
+    <p>Haz clic en el estado que te interesa, busca por nombre de ciudad o usa tu ubicación actual para obtener el pronóstico del tiempo.</p>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Obteniendo datos meteorológicos...</p>
+  </div>
+
+  <!-- Error -->
+  <div id="error-msg"></div>
+
+  <!-- Resultado -->
+  <div id="resultado">
+
+    <!-- Título -->
+    <div class="municipio-titulo">
+      <h2 id="titulo-municipio">📍 Municipio</h2>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="actualizacion" id="hora-actualizacion"></div>
+        <button id="btn-compartir" onclick="compartirEnlace()"
+          title="Copiar enlace a esta ciudad"
+          style="background:var(--azul-udg);color:white;border:none;border-radius:5px;
+                 padding:4px 11px;font-size:0.78rem;cursor:pointer;opacity:0.85;
+                 transition:opacity 0.15s;">🔗 Compartir</button>
+      </div>
+    </div>
+
+    <!-- Alertas -->
+    <div id="alertas-container"></div>
+
+    <!-- Boletín climatológico del día -->
+    <div id="boletin-climatologico" style="display:none;
+         background:linear-gradient(135deg,var(--azul-udg) 0%,#1e4d8c 100%);
+         color:white; border-radius:10px; padding:16px 22px; margin-bottom:18px;
+         line-height:1.65; font-size:0.92rem; position:relative;">
+      <div style="font-weight:700;font-size:0.78rem;text-transform:uppercase;
+                  letter-spacing:0.08em;opacity:0.75;margin-bottom:6px;">
+        📋 Boletín Climatológico
+      </div>
+      <div id="boletin-texto"></div>
+      <div style="font-size:0.72rem;opacity:0.6;margin-top:8px;font-style:italic;"
+           id="boletin-fecha"></div>
+    </div>
+
+    <!-- Condiciones actuales -->
+    <p class="seccion-titulo">🌡️ Condiciones Actuales</p>
+    <div class="actuales-grid">
+      <div class="actuales-principal">
+        <div class="actuales-icono" id="act-icono">—</div>
+        <div class="actuales-temp" id="act-temp">—</div>
+        <div class="actuales-desc" id="act-desc">—</div>
+        <div class="actuales-sensacion" id="act-sensacion"></div>
+      </div>
+      <div class="actuales-detalles">
+        <div class="detalle-item">
+          <span class="etiqueta">💧 Humedad</span>
+          <span class="valor" id="act-humedad">—</span>
+        </div>
+        <div class="detalle-item">
+          <span class="etiqueta">💨 Viento</span>
+          <span class="valor" id="act-viento">—</span>
+          <span class="valor-sub" id="act-viento-dir">—</span>
+        </div>
+        <div class="detalle-item">
+          <span class="etiqueta">🌧️ Precipitación</span>
+          <span class="valor" id="act-precip">—</span>
+        </div>
+        <div class="detalle-item">
+          <span class="etiqueta">☀️ Índice UV</span>
+          <span class="valor" id="act-uv">—</span>
+          <span class="valor-sub" id="act-uv-desc">—</span>
+        </div>
+        <div class="detalle-item">
+          <span class="etiqueta">🌫️ Calidad del Aire (AQI)</span>
+          <span class="valor" id="act-aqi">—</span>
+          <span class="valor-sub" id="act-aqi-desc">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparación con promedio histórico -->
+    <div id="panel-historico" style="display:none; margin-bottom:18px;">
+      <p class="seccion-titulo">📊 Comparación con Promedio Histórico (ERA5 · 1991–2020)</p>
+      <div id="historico-contenido"
+           style="background:white;border-radius:10px;padding:16px 20px;
+                  box-shadow:var(--sombra);display:flex;flex-wrap:wrap;gap:16px;
+                  align-items:center;">
+        <div id="historico-cargando" style="color:var(--verde-olivo);font-size:0.9rem;">
+          ⏳ Consultando datos históricos...
+        </div>
+      </div>
+    </div>
+
+    <!-- Pronóstico 7 días -->
+    <p class="seccion-titulo">📅 Pronóstico 7 Días</p>
+    <div class="pronostico-grid" id="pronostico-grid"></div>
+
+    <!-- Detalle del día -->
+    <div id="detalle-dia">
+      <h3 id="detalle-titulo">Detalle del día</h3>
+      <div class="detalle-variables" id="detalle-variables"></div>
+      <!-- Gráficas horarias -->
+      <div id="detalle-graficas" style="display:none">
+        <h4>📊 Evolución por hora</h4>
+        <div class="graficas-grid">
+          <div class="grafica-card">
+            <div class="grafica-card-titulo">🌡️ Temperatura (°C)</div>
+            <div class="grafica-canvas-wrap"><canvas id="grafica-temp"></canvas></div>
+          </div>
+          <div class="grafica-card">
+            <div class="grafica-card-titulo">💧 Probabilidad de lluvia (%)</div>
+            <div class="grafica-canvas-wrap"><canvas id="grafica-lluvia"></canvas></div>
+          </div>
+          <div class="grafica-card">
+            <div class="grafica-card-titulo">💨 Viento (km/h)</div>
+            <div class="grafica-canvas-wrap"><canvas id="grafica-viento"></canvas></div>
+          </div>
+          <div class="grafica-card">
+            <div class="grafica-card-titulo">💦 Humedad relativa (%)</div>
+            <div class="grafica-canvas-wrap"><canvas id="grafica-humedad"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: Variables adicionales -->
+    <div class="panel-adicional">
+      <div class="panel-header" onclick="togglePanel('panel-adicional-contenido', this)">
+        <h3>📊 Tabla detallada por día (todas las variables)</h3>
+        <span class="panel-toggle">▼</span>
+      </div>
+      <div class="panel-contenido" id="panel-adicional-contenido">
+        <div class="tabla-wrap">
+          <table class="horaria" id="tabla-detallada">
+            <thead>
+              <tr>
+                <th>Día</th>
+                <th>🌡️ Máx</th>
+                <th>🌡️ Mín</th>
+                <th>🌧️ Precip (mm)</th>
+                <th>☔ Prob lluvia</th>
+                <th>💨 Viento máx</th>
+                <th>🌬️ Dirección</th>
+                <th>☀️ UV máx</th>
+                <th>💧 Hum. media</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-cuerpo"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fuente -->
+    <div class="fuente-datos">
+      Datos proporcionados por <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> (código libre) y
+      <a href="https://smn.conagua.gob.mx" target="_blank">SMN-CONAGUA</a>. Los pronósticos tienen una confiabilidad alta
+      para los primeros 3 días y disminuye progresivamente. Este sistema es desarrollado por el
+      <strong>Centro de Estudios Medioambientales y de Servicios Académicos y Comunitarios</strong> &mdash; CU Tlaquepaque, UDG.
+    </div>
+
+  </div><!-- /resultado -->
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div>
+    🌿 <strong>Centro de Estudios Medioambientales y de Servicios Académicos y Comunitarios</strong>
+  </div>
+  <div>
+    <strong>Centro Universitario de Tlaquepaque &mdash; Universidad de Guadalajara</strong>
+  </div>
+  <div style="margin-top:4px; opacity:0.65;">
+    Parque Metropolitano Cerro del Cuatro &bull; Tlaquepaque, Jalisco, México
+  </div>
+  <div class="footer-links">
+    <a href="https://cutlaquepaque.udg.mx" target="_blank">🏫 cutlaquepaque.udg.mx</a>
+    <span class="footer-divider">|</span>
+    <a href="https://www.udg.mx" target="_blank">Universidad de Guadalajara</a>
+    <span class="footer-divider">|</span>
+    <a href="https://smn.conagua.gob.mx" target="_blank">SMN-CONAGUA</a>
+    <span class="footer-divider">|</span>
+    <a href="https://open-meteo.com" target="_blank">Open-Meteo API</a>
+    <span class="footer-divider">|</span>
+    <a href="https://earthdata.nasa.gov" target="_blank">NASA GIBS</a>
+    <span class="footer-divider">|</span>
+    <a href="https://www.rainviewer.com" target="_blank">RainViewer</a>
+  </div>
+  <div class="footer-copy">
+    © <span id="footer-year"></span> CU Tlaquepaque &mdash; Datos abiertos para uso académico y comunitario.
+    Los pronósticos son orientativos; para emergencias consulte al SMN.
+  </div>
+  <div style="margin-top:10px; font-size:0.78rem; opacity:0.70; font-style:italic;">
+    Página creada por el <strong style="color:white;">Dr. Víctor Manuel Chávez Pérez</strong>
+  </div>
+</footer>
+<script>document.getElementById("footer-year").textContent = new Date().getFullYear();</script>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+
+/* ──────────────────────────────────────────
+   MUNICIPIOS DE JALISCO (125 municipios)
+   ────────────────────────────────────────── */
+const MUNICIPIOS = [
+  { nombre:"Acatic",                      lat:20.7833, lon:-102.8833 },
+  { nombre:"Acatlán de Juárez",           lat:20.3500, lon:-103.5833 },
+  { nombre:"Ahualulco de Mercado",        lat:20.7167, lon:-103.9667 },
+  { nombre:"Amacueca",                    lat:20.1167, lon:-103.6000 },
+  { nombre:"Ameca",                       lat:20.5500, lon:-104.0500 },
+  { nombre:"Arandas",                     lat:20.7000, lon:-102.3333 },
+  { nombre:"El Arenal",                   lat:20.8500, lon:-103.7667 },
+  { nombre:"Atengo",                      lat:20.2000, lon:-104.0500 },
+  { nombre:"Atenguillo",                  lat:20.3667, lon:-104.4667 },
+  { nombre:"Atotonilco el Alto",          lat:20.5333, lon:-102.5167 },
+  { nombre:"Atotonilco el Bajo",          lat:20.7833, lon:-102.9333 },
+  { nombre:"Autlán de Navarro",           lat:19.7667, lon:-104.3667 },
+  { nombre:"Ayotlán",                     lat:20.1000, lon:-102.7167 },
+  { nombre:"Ayutla",                      lat:20.1167, lon:-104.3667 },
+  { nombre:"La Barca",                    lat:20.2833, lon:-102.5500 },
+  { nombre:"Bolaños",                     lat:21.7333, lon:-103.7667 },
+  { nombre:"Cabo Corrientes",             lat:20.3167, lon:-105.2167 },
+  { nombre:"Casimiro Castillo",           lat:19.7333, lon:-104.3000 },
+  { nombre:"Cihuatlán",                   lat:19.2500, lon:-104.5667 },
+  { nombre:"Cocula",                      lat:20.3667, lon:-103.8167 },
+  { nombre:"Colotlán",                    lat:22.1000, lon:-103.2667 },
+  { nombre:"Concepción de Buenos Aires",  lat:19.9667, lon:-102.6833 },
+  { nombre:"Cuautitlán de García Barragán",lat:19.6333,lon:-104.4333 },
+  { nombre:"Cuautla",                     lat:20.8833, lon:-103.5167 },
+  { nombre:"Cuquío",                      lat:20.9333, lon:-103.0167 },
+  { nombre:"Chapala",                     lat:20.2985, lon:-103.1914 },
+  { nombre:"Chimaltitán",                 lat:21.7500, lon:-103.6167 },
+  { nombre:"Chiquilistlán",              lat:20.1833, lon:-103.6167 },
+  { nombre:"Degollado",                   lat:20.4167, lon:-102.1500 },
+  { nombre:"Ejutla",                      lat:19.9333, lon:-104.2000 },
+  { nombre:"Encarnación de Díaz",         lat:21.5167, lon:-102.2333 },
+  { nombre:"Etzatlán",                    lat:20.7667, lon:-104.0833 },
+  { nombre:"El Grullo",                   lat:19.8000, lon:-104.2167 },
+  { nombre:"Guachinango",                 lat:20.5500, lon:-104.4333 },
+  { nombre:"Guadalajara",                 lat:20.6597, lon:-103.3496 },
+  { nombre:"Hostotipaquillo",             lat:21.1000, lon:-104.0500 },
+  { nombre:"Huejúcar",                    lat:22.3667, lon:-103.2167 },
+  { nombre:"Huejuquilla el Alto",         lat:22.6167, lon:-103.8667 },
+  { nombre:"La Huerta",                   lat:19.4833, lon:-104.6500 },
+  { nombre:"Ixtlahuacán de los Membrillos",lat:20.3833,lon:-103.2000 },
+  { nombre:"Ixtlahuacán del Río",         lat:20.9167, lon:-103.2000 },
+  { nombre:"Jalostotitlán",               lat:21.1667, lon:-102.4667 },
+  { nombre:"Jamay",                       lat:20.2833, lon:-102.7167 },
+  { nombre:"Jesús María",                 lat:21.9667, lon:-102.3167 },
+  { nombre:"Jilotlán de los Dolores",     lat:19.4667, lon:-103.0000 },
+  { nombre:"Jocotepec",                   lat:20.2833, lon:-103.4333 },
+  { nombre:"Juanacatlán",                 lat:20.5000, lon:-103.1667 },
+  { nombre:"Juchitlán",                   lat:20.2167, lon:-103.9500 },
+  { nombre:"Lagos de Moreno",             lat:21.3567, lon:-101.9334 },
+  { nombre:"El Limón",                    lat:19.8500, lon:-104.0667 },
+  { nombre:"Magdalena",                   lat:20.9000, lon:-104.1167 },
+  { nombre:"Mascota",                     lat:20.5333, lon:-104.7833 },
+  { nombre:"Mazamitla",                   lat:19.9167, lon:-103.0167 },
+  { nombre:"Mexticacán",                  lat:21.2167, lon:-102.7833 },
+  { nombre:"Mezquitic",                   lat:22.3000, lon:-103.7000 },
+  { nombre:"Mixtlán",                     lat:20.3167, lon:-104.1833 },
+  { nombre:"Ocotlán",                     lat:20.3500, lon:-102.7667 },
+  { nombre:"Ojuelos de Jalisco",          lat:21.8667, lon:-101.5833 },
+  { nombre:"Pihuamo",                     lat:19.2333, lon:-103.3500 },
+  { nombre:"Poncitlán",                   lat:20.3667, lon:-102.9167 },
+  { nombre:"Puerto Vallarta",             lat:20.6100, lon:-105.2531 },
+  { nombre:"Villa Purificación",          lat:19.7333, lon:-104.7167 },
+  { nombre:"Quitupan",                    lat:19.6167, lon:-102.9667 },
+  { nombre:"El Salto",                    lat:20.5333, lon:-103.1833 },
+  { nombre:"San Cristóbal de la Barranca",lat:21.2167, lon:-103.3833 },
+  { nombre:"San Diego de Alejandría",     lat:21.2667, lon:-102.0167 },
+  { nombre:"San Gabriel",                 lat:19.7833, lon:-103.7167 },
+  { nombre:"San Juan de los Lagos",       lat:21.2500, lon:-102.3333 },
+  { nombre:"San Juanito de Escobedo",     lat:20.8167, lon:-103.8833 },
+  { nombre:"San Marcos",                  lat:21.4167, lon:-102.4167 },
+  { nombre:"San Martín de Bolaños",       lat:21.6333, lon:-103.9000 },
+  { nombre:"San Martín Hidalgo",          lat:20.4333, lon:-103.9167 },
+  { nombre:"San Miguel el Alto",          lat:21.0167, lon:-102.4167 },
+  { nombre:"San Sebastián del Oeste",     lat:20.7667, lon:-104.8500 },
+  { nombre:"Santa María de los Ángeles",  lat:21.7333, lon:-102.6333 },
+  { nombre:"Sayula",                      lat:19.8833, lon:-103.6167 },
+  { nombre:"Tala",                        lat:20.6500, lon:-103.7000 },
+  { nombre:"Talpa de Allende",            lat:20.3833, lon:-104.8333 },
+  { nombre:"Tamazula de Gordiano",        lat:19.6667, lon:-103.2667 },
+  { nombre:"Tapalpa",                     lat:19.9500, lon:-103.7500 },
+  { nombre:"Tecalitlán",                  lat:19.4500, lon:-103.3000 },
+  { nombre:"Tecolotlán",                  lat:20.1833, lon:-104.0500 },
+  { nombre:"Techaluta de Montenegro",     lat:20.1167, lon:-103.4667 },
+  { nombre:"Tenamaxtlán",                 lat:20.2333, lon:-104.1667 },
+  { nombre:"Teocaltiche",                 lat:21.4333, lon:-102.5833 },
+  { nombre:"Teocuitatlán de Corona",      lat:20.1167, lon:-103.4167 },
+  { nombre:"Tepatitlán de Morelos",       lat:20.8167, lon:-102.7333 },
+  { nombre:"Tequila",                     lat:20.8833, lon:-103.8333 },
+  { nombre:"Teuchitlán",                  lat:20.6667, lon:-103.8667 },
+  { nombre:"Tizapán el Alto",             lat:20.1667, lon:-103.0000 },
+  { nombre:"Tlajomulco de Zúñiga",        lat:20.4833, lon:-103.4333 },
+  { nombre:"San Pedro Tlaquepaque",       lat:20.6180, lon:-103.3167 },
+  { nombre:"Tolimán",                     lat:19.7667, lon:-103.2333 },
+  { nombre:"Tomatlán",                    lat:19.9333, lon:-105.2500 },
+  { nombre:"Tonalá",                      lat:20.6167, lon:-103.2333 },
+  { nombre:"Tonaya",                      lat:19.9167, lon:-104.0167 },
+  { nombre:"Tonila",                      lat:19.5167, lon:-103.4833 },
+  { nombre:"Totatiche",                   lat:22.1000, lon:-103.5167 },
+  { nombre:"Tototlán",                    lat:20.5500, lon:-102.8000 },
+  { nombre:"Tuxcacuesco",                 lat:19.9833, lon:-104.1333 },
+  { nombre:"Tuxcueca",                    lat:20.1500, lon:-103.2000 },
+  { nombre:"Tuxpan",                      lat:19.5667, lon:-103.4333 },
+  { nombre:"Unión de San Antonio",        lat:21.1333, lon:-102.0167 },
+  { nombre:"Unión de Tula",               lat:19.9500, lon:-104.2667 },
+  { nombre:"Valle de Guadalupe",          lat:20.9500, lon:-103.1167 },
+  { nombre:"Valle de Juárez",             lat:19.8833, lon:-102.8333 },
+  { nombre:"Villa Corona",                lat:20.4167, lon:-103.5833 },
+  { nombre:"Villa Guerrero",              lat:21.9667, lon:-103.5833 },
+  { nombre:"Villa Hidalgo",               lat:21.6667, lon:-102.5833 },
+  { nombre:"Yahualica de González Gallo", lat:21.1833, lon:-102.8833 },
+  { nombre:"Zacoalco de Torres",          lat:20.2333, lon:-103.5833 },
+  { nombre:"Zapopan",                     lat:20.7167, lon:-103.4004 },
+  { nombre:"Zapotiltic",                  lat:19.6333, lon:-103.4333 },
+  { nombre:"Zapotitlán de Vadillo",       lat:19.7500, lon:-103.8000 },
+  { nombre:"Zapotlán del Rey",            lat:20.3000, lon:-102.9000 },
+  { nombre:"Zapotlán el Grande",          lat:19.7000, lon:-103.4667 },
+  { nombre:"Zapotlanejo",                 lat:20.6167, lon:-102.8667 },
+];
+
+/* CODIGOS_POSTALES eliminado — ahora se usa la API de zippopotam.us */
+
+/* ──────────────────────────────────────────
+   WMO WEATHER CODES
+   ────────────────────────────────────────── */
+const WMO = {
+  0:  { desc:"Cielo despejado",        icono:"☀️" },
+  1:  { desc:"Mayormente despejado",    icono:"🌤️" },
+  2:  { desc:"Parcialmente nublado",    icono:"⛅" },
+  3:  { desc:"Nublado",                 icono:"☁️" },
+  45: { desc:"Niebla",                  icono:"🌫️" },
+  48: { desc:"Niebla con escarcha",     icono:"🌫️" },
+  51: { desc:"Llovizna ligera",         icono:"🌦️" },
+  53: { desc:"Llovizna moderada",       icono:"🌦️" },
+  55: { desc:"Llovizna densa",          icono:"🌧️" },
+  61: { desc:"Lluvia ligera",           icono:"🌧️" },
+  63: { desc:"Lluvia moderada",         icono:"🌧️" },
+  65: { desc:"Lluvia intensa",          icono:"🌧️" },
+  71: { desc:"Nevada ligera",           icono:"🌨️" },
+  73: { desc:"Nevada moderada",         icono:"❄️" },
+  75: { desc:"Nevada intensa",          icono:"❄️" },
+  77: { desc:"Granizo fino",            icono:"🌨️" },
+  80: { desc:"Chubascos ligeros",       icono:"🌦️" },
+  81: { desc:"Chubascos moderados",     icono:"🌧️" },
+  82: { desc:"Chubascos violentos",     icono:"⛈️" },
+  85: { desc:"Chubascos de nieve",      icono:"🌨️" },
+  86: { desc:"Chubascos de nieve int.", icono:"❄️" },
+  95: { desc:"Tormenta eléctrica",      icono:"⛈️" },
+  96: { desc:"Tormenta con granizo",    icono:"⛈️" },
+  99: { desc:"Tormenta con granizo int.",icono:"⛈️"},
+};
+function wmo(code) { return WMO[code] || { desc:"Sin datos", icono:"🌡️" }; }
+
+/* ──────────────────────────────────────────
+   DIRECCIÓN DEL VIENTO
+   ────────────────────────────────────────── */
+function dirViento(grados) {
+  const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"];
+  return dirs[Math.round(grados / 22.5) % 16];
+}
+
+/* ──────────────────────────────────────────
+   ÍNDICE UV
+   ────────────────────────────────────────── */
+function uvDesc(uv) {
+  if (uv < 3)  return { texto:"Bajo",       color:"#1B7A3E" };
+  if (uv < 6)  return { texto:"Moderado",   color:"#D97706" };
+  if (uv < 8)  return { texto:"Alto",       color:"#C05621" };
+  if (uv < 11) return { texto:"Muy alto",   color:"#C0392B" };
+  return              { texto:"Extremo",    color:"#6B21A8" };
+}
+
+/* ──────────────────────────────────────────
+   DÍAS DE LA SEMANA
+   ────────────────────────────────────────── */
+const DIAS_ES = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+const MESES_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+
+function formatFecha(isoStr) {
+  const d = new Date(isoStr + "T12:00:00");
+  return `${DIAS_ES[d.getDay()]} ${d.getDate()} ${MESES_ES[d.getMonth()]}`;
+}
+function formatFechaCorta(isoStr) {
+  const d = new Date(isoStr + "T12:00:00");
+  return `${d.getDate()}/${d.getMonth()+1}`;
+}
+function esHoy(isoStr) {
+  const hoy = new Date().toISOString().slice(0,10);
+  return isoStr === hoy;
+}
+
+/* ──────────────────────────────────────────
+   ALERTAS AUTOMÁTICAS
+   ────────────────────────────────────────── */
+function generarAlertas(current, daily) {
+  const alertas = [];
+  if (current.uv_index >= 8)
+    alertas.push({ tipo:"precaucion", icono:"☀️", msg:`Índice UV muy alto (${current.uv_index}). Se recomienda protección solar, evitar exposición entre 11:00 y 15:00.` });
+  if (current.wind_speed_10m >= 50)
+    alertas.push({ tipo:"peligro",    icono:"💨", msg:`Viento fuerte: ${current.wind_speed_10m} km/h. Precaución en carreteras y zonas abiertas.` });
+  if (daily.precipitation_probability_max[0] >= 80)
+    alertas.push({ tipo:"precaucion", icono:"🌧️", msg:`Alta probabilidad de lluvia hoy (${daily.precipitation_probability_max[0]}%). Lleva paraguas.` });
+  if (daily.precipitation_sum[0] >= 30)
+    alertas.push({ tipo:"peligro",    icono:"⛈️", msg:`Precipitación acumulada esperada hoy: ${daily.precipitation_sum[0].toFixed(1)} mm. Riesgo de encharcamientos.` });
+  const wmoHoy = wmo(daily.weather_code[0]);
+  if ([95,96,99].includes(daily.weather_code[0]))
+    alertas.push({ tipo:"peligro",    icono:"⛈️", msg:`Se prevén tormentas eléctricas. Evite espacios abiertos y zonas de inundación.` });
+  return alertas;
+}
+
+/* ──────────────────────────────────────────
+   FETCH CALIDAD DEL AIRE (Open-Meteo Air Quality)
+   ────────────────────────────────────────── */
+async function fetchCalidadAire(lat, lon) {
+  try {
+    const url = `https://air-quality-api.open-meteo.com/v1/air-quality?` +
+      `latitude=${lat}&longitude=${lon}` +
+      `&current=us_aqi,pm10,pm2_5,european_aqi` +
+      `&timezone=America%2FMexico_City`;
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch(e) { return null; }
+}
+
+/* ──────────────────────────────────────────
+   DATOS HISTÓRICOS ERA5 (Open-Meteo Archive)
+   Promedio 1991-2020 para el mismo día del año
+   ────────────────────────────────────────── */
+async function fetchHistorico(lat, lon, currentData) {
+  const panel = document.getElementById('panel-historico');
+  const contenido = document.getElementById('historico-contenido');
+  panel.style.display = 'block';
+
+  try {
+    // Calcular rango de 30 años en el mismo día-mes pero años anteriores
+    const hoy = new Date();
+    const mes  = String(hoy.getMonth() + 1).padStart(2, '0');
+    const dia  = String(hoy.getDate()).padStart(2, '0');
+    // Pedimos los últimos 30 años para ese día (usamos rango de fechas)
+    const startDate = `1991-${mes}-${dia}`;
+    const endDate   = `2020-${mes}-${dia}`;
+
+    const url = `https://archive-api.open-meteo.com/v1/archive?` +
+      `latitude=${lat}&longitude=${lon}` +
+      `&start_date=${startDate}&end_date=${endDate}` +
+      `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum` +
+      `&timezone=America%2FMexico_City`;
+
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('API no disponible');
+    const hist = await resp.json();
+
+    // Calcular promedios (filtrando NaN)
+    const validMax   = hist.daily.temperature_2m_max.filter(v => v !== null);
+    const validMin   = hist.daily.temperature_2m_min.filter(v => v !== null);
+    const validPrecip = hist.daily.precipitation_sum.filter(v => v !== null);
+    if (validMax.length === 0) throw new Error('Sin datos históricos');
+
+    const promMax    = validMax.reduce((a,b) => a+b, 0) / validMax.length;
+    const promMin    = validMin.reduce((a,b) => a+b, 0) / validMin.length;
+    const promPrecip = validPrecip.reduce((a,b) => a+b, 0) / validPrecip.length;
+
+    // Datos actuales del pronóstico
+    const d = currentData.daily;
+    const tMaxHoy = d.temperature_2m_max[0];
+    const tMinHoy = d.temperature_2m_min[0];
+    const precipHoy = d.precipitation_sum[0];
+
+    const difMax = tMaxHoy - promMax;
+    const difMin = tMinHoy - promMin;
+
+    function badge(dif) {
+      if (Math.abs(dif) < 0.5) return `<span style="color:#555">≈ Normal</span>`;
+      const arrow = dif > 0 ? '▲' : '▼';
+      const color = dif > 0 ? '#C0392B' : '#1B7A3E';
+      return `<span style="color:${color};font-weight:700">${arrow} ${Math.abs(dif).toFixed(1)}°C</span>`;
+    }
+
+    contenido.innerHTML = `
+      <div style="text-align:center;min-width:130px;">
+        <div style="font-size:0.72rem;color:var(--texto-suave);margin-bottom:4px;">MÁXIMA HOY</div>
+        <div style="font-size:1.5rem;font-weight:700;color:var(--terracota)">${Math.round(tMaxHoy)}°C</div>
+        <div style="font-size:0.78rem;color:var(--texto-suave)">Prom. hist: ${promMax.toFixed(1)}°C</div>
+        <div style="font-size:0.82rem;margin-top:2px;">${badge(difMax)}</div>
+      </div>
+      <div style="text-align:center;min-width:130px;">
+        <div style="font-size:0.72rem;color:var(--texto-suave);margin-bottom:4px;">MÍNIMA HOY</div>
+        <div style="font-size:1.5rem;font-weight:700;color:var(--azul-udg)">${Math.round(tMinHoy)}°C</div>
+        <div style="font-size:0.78rem;color:var(--texto-suave)">Prom. hist: ${promMin.toFixed(1)}°C</div>
+        <div style="font-size:0.82rem;margin-top:2px;">${badge(difMin)}</div>
+      </div>
+      <div style="text-align:center;min-width:130px;">
+        <div style="font-size:0.72rem;color:var(--texto-suave);margin-bottom:4px;">LLUVIA ESPERADA</div>
+        <div style="font-size:1.5rem;font-weight:700;color:var(--verde-olivo)">${precipHoy.toFixed(1)} mm</div>
+        <div style="font-size:0.78rem;color:var(--texto-suave)">Prom. hist: ${promPrecip.toFixed(1)} mm</div>
+      </div>
+      <div style="flex:1;min-width:180px;font-size:0.82rem;color:var(--texto-suave);border-left:2px solid var(--borde);padding-left:14px;line-height:1.6;">
+        <strong>Nota:</strong> El promedio histórico corresponde al mismo día del año para el período 1991–2020 (climatología ERA5).
+        Los valores positivos (▲) indican temperatura <em>sobre</em> el promedio.
+      </div>
+    `;
+  } catch(e) {
+    contenido.innerHTML = `<span style="color:var(--texto-suave);font-size:0.85rem;">⚠️ No se pudo cargar el promedio histórico para esta ubicación.</span>`;
+  }
+}
+
+function aqiDesc(aqi) {
+  if (aqi === null || aqi === undefined || isNaN(aqi)) return { texto: 'Sin datos', color: '#999' };
+  if (aqi <= 50)  return { texto: 'Buena',        color: '#1B7A3E' };
+  if (aqi <= 100) return { texto: 'Moderada',     color: '#D97706' };
+  if (aqi <= 150) return { texto: 'Dañina para grupos sensibles', color: '#E07B2A' };
+  if (aqi <= 200) return { texto: 'Dañina',       color: '#C0392B' };
+  if (aqi <= 300) return { texto: 'Muy dañina',   color: '#7B241C' };
+  return              { texto: 'Peligrosa',        color: '#4A0E0E' };
+}
+
+function mostrarCalidadAire(aqiData) {
+  const aqiEl    = document.getElementById('act-aqi');
+  const aqiDesc2 = document.getElementById('act-aqi-desc');
+  if (!aqiData || !aqiData.current) {
+    aqiEl.textContent    = '—';
+    aqiDesc2.textContent = 'Sin datos';
+    return;
+  }
+  const aqi = aqiData.current.us_aqi;
+  const info = aqiDesc(aqi);
+  aqiEl.textContent    = aqi !== null ? aqi : '—';
+  aqiDesc2.textContent = info.texto;
+  aqiDesc2.style.color = info.color;
+  // Alertas por calidad del aire
+  if (aqi !== null && aqi > 100) {
+    const alertas = document.getElementById('alertas-container');
+    const div = document.createElement('div');
+    div.className = aqi > 150 ? 'alerta peligro' : 'alerta precaucion';
+    div.innerHTML = `<span class="alerta-icono">🌫️</span> <span class="alerta-msg">Calidad del aire ${info.texto.toLowerCase()} (AQI ${aqi}). Se recomienda reducir actividades al aire libre.</span>`;
+    alertas.appendChild(div);
+  }
+}
+
+/* ──────────────────────────────────────────
+   FETCH OPEN-METEO
+   ────────────────────────────────────────── */
+async function fetchClima(lat, lon) {
+  // Verificar si hay conectividad de red
+  if (!navigator.onLine) {
+    throw new Error("Sin conexión a internet. Verifica tu red e intenta de nuevo.");
+  }
+  const url = `https://api.open-meteo.com/v1/forecast?`+
+    `latitude=${lat}&longitude=${lon}`+
+    `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,`+
+    `weather_code,wind_speed_10m_max,wind_direction_10m_dominant,uv_index_max,`+
+    `relative_humidity_2m_max,relative_humidity_2m_min`+
+    `&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,`+
+    `wind_speed_10m,relative_humidity_2m,weather_code`+
+    `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,`+
+    `wind_speed_10m,wind_direction_10m,precipitation,uv_index`+
+    `&timezone=America%2FMexico_City&forecast_days=7&wind_speed_unit=kmh&temperature_unit=celsius`;
+  let resp;
+  try {
+    resp = await fetch(url);
+  } catch(netErr) {
+    // Error de red (CORS, sin internet, bloqueado por firewall, etc.)
+    throw new Error(
+      `No se pudo conectar con Open-Meteo. ` +
+      `Si abriste el archivo directamente (file://), intenta abrirlo desde un servidor web. ` +
+      `Detalle: ${netErr.message}`
+    );
+  }
+  if (!resp.ok) {
+    let detalle = "";
+    try { const j = await resp.json(); detalle = j.reason || ""; } catch(_) {}
+    throw new Error(`Servicio meteorológico respondió con error ${resp.status}. ${detalle}`);
+  }
+  const data = await resp.json();
+  if (data.error) throw new Error(`API: ${data.reason}`);
+  return data;
+}
+
+/* ──────────────────────────────────────────
+   BOLETÍN CLIMATOLÓGICO
+   ────────────────────────────────────────── */
+function generarBoletin(data, nombreMunicipio) {
+  const c = data.current;
+  const d = data.daily;
+  const wmoAct = wmo(c.weather_code);
+  const tMax  = Math.round(d.temperature_2m_max[0]);
+  const tMin  = Math.round(d.temperature_2m_min[0]);
+  const tAct  = Math.round(c.temperature_2m);
+  const uv    = c.uv_index;
+  const viento = Math.round(c.wind_speed_10m);
+  const precip = d.precipitation_probability_max[0];
+  const precip_mm = d.precipitation_sum[0];
+  const humedad = c.relative_humidity_2m;
+
+  // Descripción del cielo
+  const cielo = wmoAct.desc.toLowerCase();
+
+  // Temperatura
+  let tempFrase = '';
+  if (tMax >= 35)       tempFrase = `con temperaturas muy altas que alcanzarán hasta ${tMax}°C`;
+  else if (tMax >= 28)  tempFrase = `con temperaturas cálidas, máxima de ${tMax}°C`;
+  else if (tMax >= 20)  tempFrase = `con temperaturas agradables, máxima de ${tMax}°C`;
+  else if (tMax >= 12)  tempFrase = `con temperaturas frescas, máxima de ${tMax}°C`;
+  else                  tempFrase = `con temperaturas frías, máxima de ${tMax}°C`;
+
+  // Lluvia
+  let lluviaFrase = '';
+  if (precip >= 70)         lluviaFrase = ` Se esperan precipitaciones con una probabilidad del ${precip}%${precip_mm > 0 ? `, acumulando aproximadamente ${precip_mm.toFixed(1)} mm` : ''}.`;
+  else if (precip >= 40)    lluviaFrase = ` Existe posibilidad de lluvia (${precip}%), se recomienda llevar paraguas.`;
+  else if (precip >= 20)    lluviaFrase = ` Probabilidad baja de precipitación (${precip}%).`;
+  else                      lluviaFrase = ` Sin lluvia prevista.`;
+
+  // Viento
+  let vientoFrase = '';
+  if (viento >= 50)         vientoFrase = ` Vientos fuertes de ${viento} km/h, precaución en carreteras.`;
+  else if (viento >= 30)    vientoFrase = ` Vientos moderados de ${viento} km/h.`;
+  else if (viento >= 15)    vientoFrase = ` Brisa de ${viento} km/h.`;
+
+  // UV
+  const uvInfo = uvDesc(uv);
+  let uvFrase = '';
+  if (uv >= 8)              uvFrase = ` Índice UV muy alto (${uv}), se recomienda protección solar y evitar exposición directa entre las 11:00 y 15:00 h.`;
+  else if (uv >= 6)         uvFrase = ` Índice UV elevado (${uv}), use protector solar.`;
+  else if (uv >= 3)         uvFrase = ` Índice UV moderado (${uv}).`;
+
+  // Humedad
+  let humedadFrase = '';
+  if (humedad >= 85)        humedadFrase = ` Humedad relativa alta (${humedad}%), ambiente bochornoso.`;
+  else if (humedad <= 25)   humedadFrase = ` Humedad relativa baja (${humedad}%), ambiente seco.`;
+
+  const textoBoletin =
+    `Para <strong>${nombreMunicipio}</strong>, se prevé un día con cielo ${cielo} ${tempFrase} y mínima de ${tMin}°C.` +
+    lluviaFrase + vientoFrase + uvFrase + humedadFrase;
+
+  const hoy = new Date().toLocaleDateString('es-MX', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  document.getElementById('boletin-texto').innerHTML = textoBoletin;
+  document.getElementById('boletin-fecha').textContent = `Emitido el ${hoy} · Temperatura actual: ${tAct}°C`;
+  document.getElementById('boletin-climatologico').style.display = 'block';
+}
+
+/* ──────────────────────────────────────────
+   MOSTRAR DATOS
+   ────────────────────────────────────────── */
+function mostrarDatos(data, nombreMunicipio) {
+  const c = data.current;
+  const d = data.daily;
+  window._datosHorarios = data.hourly || null;  // guardar para gráficas por hora
+  const wmoAct = wmo(c.weather_code);
+
+  // Generar boletín climatológico
+  try { generarBoletin(data, nombreMunicipio); } catch(e) { /* no fatal */ }
+
+  // Título
+  document.getElementById("titulo-municipio").textContent = `📍 ${nombreMunicipio}`;
+  const ahora = new Date();
+  document.getElementById("hora-actualizacion").textContent =
+    `Actualizado: ${ahora.toLocaleTimeString("es-MX", {hour:"2-digit",minute:"2-digit"})}`;
+
+  // Alertas
+  const alertas = generarAlertas(c, d);
+  const alertasHTML = alertas.map(a =>
+    `<div class="alerta-box ${a.tipo}"><span class="alerta-icono">${a.icono}</span><span>${a.msg}</span></div>`
+  ).join("");
+  document.getElementById("alertas-container").innerHTML = alertasHTML;
+
+  // Actuales
+  document.getElementById("act-icono").textContent  = wmoAct.icono;
+  document.getElementById("act-temp").textContent   = `${Math.round(c.temperature_2m)}°C`;
+  document.getElementById("act-desc").textContent   = wmoAct.desc;
+  document.getElementById("act-sensacion").textContent = `Sensación térmica: ${Math.round(c.apparent_temperature)}°C`;
+  document.getElementById("act-humedad").textContent = `${c.relative_humidity_2m}%`;
+  document.getElementById("act-viento").textContent  = `${Math.round(c.wind_speed_10m)} km/h`;
+  document.getElementById("act-viento-dir").textContent = dirViento(c.wind_direction_10m);
+  document.getElementById("act-precip").textContent  = `${c.precipitation} mm`;
+  const uvInfo = uvDesc(c.uv_index);
+  document.getElementById("act-uv").textContent = c.uv_index;
+  const uvDescEl = document.getElementById("act-uv-desc");
+  uvDescEl.textContent = uvInfo.texto;
+  uvDescEl.style.color = uvInfo.color;
+
+  // Pronóstico 7 días
+  const grid = document.getElementById("pronostico-grid");
+  grid.innerHTML = "";
+  d.time.forEach((t, i) => {
+    const w = wmo(d.weather_code[i]);
+    const hoy = esHoy(t);
+    const card = document.createElement("div");
+    card.className = "dia-card" + (hoy ? " activo" : "");
+    const tMax  = d.temperature_2m_max[i];
+    const tMin  = d.temperature_2m_min[i];
+    const prob  = d.precipitation_probability_max[i];
+    const diaColor = tMax <= 10 ? '#5a88cc'
+                   : tMax <= 20 ? '#4caf50'
+                   : tMax <= 30 ? '#ff9800'
+                   : '#e53935';
+    const barLeft  = Math.max(0, Math.min(100, ((tMin + 10) / 55) * 100));
+    const barWidth = Math.max(5, Math.min(100 - barLeft, ((tMax - tMin) / 55) * 100));
+    card.style.setProperty('--dia-color', diaColor);
+    card.innerHTML = `
+      <div class="dia-nombre">${hoy ? "Hoy" : DIAS_ES[new Date(t+"T12:00:00").getDay()]}</div>
+      <div class="dia-fecha">${formatFechaCorta(t)}</div>
+      <div class="dia-icono">${w.icono}</div>
+      <div class="dia-temps">
+        <span class="dia-max">${Math.round(tMax)}°</span>
+        <span class="dia-min">${Math.round(tMin)}°</span>
+      </div>
+      <div class="dia-tempbar-wrap"><div class="dia-tempbar" style="margin-left:${barLeft.toFixed(1)}%;width:${barWidth.toFixed(1)}%"></div></div>
+      <div class="dia-lluvia-wrap">
+        <div class="dia-lluvia-label${prob >= 50 ? ' lluvia-alta' : ''}">
+          <span>💧 Lluvia</span><span>${prob}%</span>
+        </div>
+        <div class="dia-lluviabar-wrap"><div class="dia-lluviabar" style="width:${prob}%"></div></div>
+      </div>
+    `;
+    card.addEventListener("click", () => mostrarDetalleDia(d, i, t));
+    grid.appendChild(card);
+  });
+
+  // Tabla detallada
+  const tbody = document.getElementById("tabla-cuerpo");
+  tbody.innerHTML = "";
+  d.time.forEach((t, i) => {
+    const tr = document.createElement("tr");
+    const uvI = uvDesc(d.uv_index_max[i]);
+    tr.innerHTML = `
+      <td><strong>${esHoy(t)?"Hoy":""}</strong> ${formatFecha(t)}</td>
+      <td style="color:#C0392B;font-weight:700">${Math.round(d.temperature_2m_max[i])}°C</td>
+      <td style="color:#0047AB">${Math.round(d.temperature_2m_min[i])}°C</td>
+      <td>${d.precipitation_sum[i].toFixed(1)}</td>
+      <td>${d.precipitation_probability_max[i]}%</td>
+      <td>${Math.round(d.wind_speed_10m_max[i])} km/h</td>
+      <td>${dirViento(d.wind_direction_10m_dominant[i])}</td>
+      <td style="color:${uvI.color};font-weight:700">${d.uv_index_max[i]} (${uvI.texto})</td>
+      <td>${d.relative_humidity_2m_max ? Math.round((d.relative_humidity_2m_max[i]+d.relative_humidity_2m_min[i])/2)+"%" : "—"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Mostrar detalle del primer día
+  mostrarDetalleDia(d, 0, d.time[0]);
+
+  // Mostrar resultado
+  document.getElementById("resultado").style.display = "block";
+}
+
+/* ──────────────────────────────────────────
+   DETALLE DE UN DÍA
+   ────────────────────────────────────────── */
+// Instancias activas de Chart.js (para destruirlas antes de recrear)
+const _charts = {};
+
+function mostrarDetalleDia(d, idx, t) {
+  // Marcar activo
+  document.querySelectorAll(".dia-card").forEach((c,i) => {
+    c.classList.toggle("activo", i === idx);
+  });
+
+  const w    = wmo(d.weather_code[idx]);
+  const uvI  = uvDesc(d.uv_index_max[idx]);
+  const titulo = document.getElementById("detalle-titulo");
+  titulo.textContent = `${w.icono} ${formatFecha(t)} — ${w.desc}`;
+
+  const vars = [
+    { icono:"🌡️", nombre:"Temp. máxima",   valor:`${Math.round(d.temperature_2m_max[idx])}°C` },
+    { icono:"🌡️", nombre:"Temp. mínima",   valor:`${Math.round(d.temperature_2m_min[idx])}°C` },
+    { icono:"🌧️", nombre:"Precipitación",  valor:`${d.precipitation_sum[idx].toFixed(1)} mm` },
+    { icono:"☔", nombre:"Prob. de lluvia", valor:`${d.precipitation_probability_max[idx]}%` },
+    { icono:"💨", nombre:"Viento máx.",    valor:`${Math.round(d.wind_speed_10m_max[idx])} km/h` },
+    { icono:"🌬️", nombre:"Dirección viento",valor:dirViento(d.wind_direction_10m_dominant[idx]) },
+    { icono:"☀️", nombre:"Índice UV máx.", valor:`${d.uv_index_max[idx]} — ${uvI.texto}` },
+    { icono:"💧", nombre:"Hum. relativa (media)", valor: d.relative_humidity_2m_max ? `${Math.round((d.relative_humidity_2m_max[idx]+d.relative_humidity_2m_min[idx])/2)}%` : "—" },
+  ];
+
+  document.getElementById("detalle-variables").innerHTML = vars.map(v => `
+    <div class="variable-item">
+      <span class="var-icono">${v.icono}</span>
+      <div class="var-info">
+        <div class="var-nombre">${v.nombre}</div>
+        <div class="var-valor">${v.valor}</div>
+      </div>
+    </div>
+  `).join("");
+
+  document.getElementById("detalle-dia").style.display = "block";
+
+  // Gráficas horarias si hay datos disponibles
+  if (window._datosHorarios) {
+    mostrarGraficasDia(window._datosHorarios, idx);
+  }
+}
+
+function mostrarGraficasDia(h, dayIdx) {
+  const seccion = document.getElementById("detalle-graficas");
+  seccion.style.display = "block";
+
+  // Índices de las 24 horas del día seleccionado
+  const ini  = dayIdx * 24;
+  const fin  = ini + 24;
+  const horas = Array.from({length:24}, (_,i) => `${String(i).padStart(2,'0')}:00`);
+
+  const temp    = h.temperature_2m.slice(ini, fin);
+  const lluvia  = h.precipitation_probability.slice(ini, fin);
+  const viento  = h.wind_speed_10m.slice(ini, fin);
+  const humedad = h.relative_humidity_2m.slice(ini, fin);
+
+  // Opciones comunes
+  const baseOpts = (yLabel, yMax) => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 400 },
+    plugins: { legend: { display: false }, tooltip: {
+      callbacks: { label: ctx => `${ctx.parsed.y} ${yLabel}` }
+    }},
+    scales: {
+      x: { ticks: { font: {size:9}, maxRotation:0,
+            callback: (v,i) => (i % 6 === 0 ? horas[i] : '') },
+           grid: { color: 'rgba(0,0,0,0.05)' } },
+      y: { ticks: { font:{size:9} },
+           grid: { color: 'rgba(0,0,0,0.05)' },
+           suggestedMin: 0,
+           ...(yMax ? { max: yMax } : {}) }
+    }
+  });
+
+  const lineDS = (data, color, fill=true) => ({
+    data,
+    borderColor: color,
+    backgroundColor: fill ? color.replace(')',',0.12)').replace('rgb','rgba') : 'transparent',
+    borderWidth: 2,
+    pointRadius: 2,
+    fill,
+    tension: 0.35
+  });
+
+  const barDS = (data, color) => ({
+    data,
+    backgroundColor: color,
+    borderRadius: 3,
+    borderSkipped: false
+  });
+
+  // Destruir gráficas previas
+  ['temp','lluvia','viento','humedad'].forEach(id => {
+    if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
+  });
+
+  _charts.temp = new Chart(document.getElementById('grafica-temp'), {
+    type:'line', data:{ labels:horas, datasets:[lineDS(temp,'rgb(230,90,48)')] }, options:baseOpts('°C')
+  });
+  _charts.lluvia = new Chart(document.getElementById('grafica-lluvia'), {
+    type:'bar', data:{ labels:horas, datasets:[barDS(lluvia,'rgba(27,111,168,0.65)')] }, options:baseOpts('%',100)
+  });
+  _charts.viento = new Chart(document.getElementById('grafica-viento'), {
+    type:'line', data:{ labels:horas, datasets:[lineDS(viento,'rgb(52,143,108)')] }, options:baseOpts('km/h')
+  });
+  _charts.humedad = new Chart(document.getElementById('grafica-humedad'), {
+    type:'line', data:{ labels:horas, datasets:[lineDS(humedad,'rgb(90,107,42)')] }, options:baseOpts('%',100)
+  });
+}
+
+/* ──────────────────────────────────────────
+   BUSCAR MUNICIPIO
+   ────────────────────────────────────────── */
+async function buscarMunicipio(mun) {
+  document.getElementById("estado-inicial").style.display = "none";
+  document.getElementById("resultado").style.display      = "none";
+  document.getElementById("error-msg").style.display      = "none";
+  document.getElementById("loading").style.display        = "block";
+  try {
+    const [data, aqiData] = await Promise.all([
+      fetchClima(mun.lat, mun.lon),
+      fetchCalidadAire(mun.lat, mun.lon)
+    ]);
+    mostrarDatos(data, mun.nombre);
+    mostrarCalidadAire(aqiData);
+    // Datos históricos en paralelo (no bloquea la carga principal)
+    fetchHistorico(mun.lat, mun.lon, data).catch(() => {});
+    // Guardar última ciudad consultada (para recargar al volver)
+    try {
+      localStorage.setItem('ultimaCiudad', JSON.stringify({
+        nombre: mun.nombre, lat: mun.lat, lon: mun.lon
+      }));
+    } catch(e) { /* localStorage no disponible */ }
+    // Actualizar URL para que sea compartible
+    try {
+      const params = new URLSearchParams();
+      params.set('ciudad', mun.nombre);
+      params.set('lat',    mun.lat.toFixed(4));
+      params.set('lon',    mun.lon.toFixed(4));
+      history.replaceState(null, '', '?' + params.toString());
+    } catch(e) { /* history API no disponible */ }
+  } catch(e) {
+    document.getElementById("error-msg").style.display = "block";
+    document.getElementById("error-msg").innerHTML =
+      `⚠️ <strong>Error al obtener datos:</strong> ${e.message}. Verifique su conexión e intente de nuevo.`;
+  } finally {
+    document.getElementById("loading").style.display = "none";
+  }
+}
+
+/* ──────────────────────────────────────────
+   BUSCAR POR CÓDIGO POSTAL (cualquier CP de México)
+   API: api.zippopotam.us — gratuita, sin token
+   ────────────────────────────────────────── */
+async function buscarPorCP() {
+  const cp = document.getElementById("input-cp").value.trim();
+  if (cp.length !== 5 || isNaN(cp)) {
+    alert("Por favor ingresa un código postal válido de 5 dígitos.");
+    return;
+  }
+
+  // Mostrar spinner mientras consultamos
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("estado-inicial").style.display = "none";
+
+  try {
+    const resp = await fetch(`https://api.zippopotam.us/mx/${cp}`);
+    if (!resp.ok) {
+      throw new Error("Código postal no encontrado. Verifica que sea un CP mexicano válido.");
+    }
+    const data = await resp.json();
+    const lugar = data.places[0];
+    const nombre  = lugar["place name"];
+    const estado  = lugar["state"];
+    const lat     = parseFloat(lugar["latitude"]);
+    const lon     = parseFloat(lugar["longitude"]);
+
+    document.getElementById("input-municipio").value = `${nombre}, ${estado}`;
+    await buscarMunicipio({ nombre: `${nombre}, ${estado}`, lat, lon });
+  } catch(e) {
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("estado-inicial").style.display = "block";
+    alert(`No se encontró el código postal ${cp}.\n${e.message}`);
+  }
+}
+
+/* ──────────────────────────────────────────
+   COMPARTIR ENLACE
+   ────────────────────────────────────────── */
+function compartirEnlace() {
+  const url = window.location.href;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('btn-compartir');
+      const orig = btn.textContent;
+      btn.textContent = '✅ ¡Copiado!';
+      btn.style.background = 'var(--alerta-verde)';
+      setTimeout(() => { btn.textContent = orig; btn.style.background = 'var(--azul-udg)'; }, 2000);
+    }).catch(() => prompt('Copia este enlace:', url));
+  } else {
+    prompt('Copia este enlace:', url);
+  }
+}
+
+/* ──────────────────────────────────────────
+   GEOLOCALIZACIÓN
+   ────────────────────────────────────────── */
+function buscarUbicacion() {
+  if (!navigator.geolocation) {
+    alert("Tu navegador no soporta geolocalización.");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    // Buscar municipio más cercano
+    let mejor = null, minDist = Infinity;
+    MUNICIPIOS.forEach(m => {
+      const d = Math.hypot(m.lat - lat, m.lon - lon);
+      if (d < minDist) { minDist = d; mejor = m; }
+    });
+    if (mejor) {
+      document.getElementById("input-municipio").value = mejor.nombre;
+      buscarMunicipio(mejor);
+    }
+  }, () => alert("No se pudo obtener tu ubicación. Verifica los permisos del navegador."));
+}
+
+/* ──────────────────────────────────────────
+   AUTOCOMPLETE
+   ────────────────────────────────────────── */
+const inputMun   = document.getElementById("input-municipio");
+const listaMun   = document.getElementById("lista-municipios");
+
+inputMun.addEventListener("input", () => {
+  const q = inputMun.value.toLowerCase().trim();
+  listaMun.innerHTML = "";
+  if (q.length < 2) { listaMun.style.display = "none"; return; }
+  const fuente = window.CIUDADES_BUSQUEDA || MUNICIPIOS;
+  const matches = fuente.filter(m => m.nombre.toLowerCase().includes(q)).slice(0, 10);
+  if (!matches.length) { listaMun.style.display = "none"; return; }
+  matches.forEach(m => {
+    const div = document.createElement("div");
+    div.innerHTML = `<strong>${m.nombre}</strong>${m.estado && m.nombre !== m.estado ? ` <span style="color:#888;font-size:11px">· ${m.estado}</span>` : ""}`;
+    div.addEventListener("click", () => {
+      inputMun.value = m.nombre;
+      listaMun.style.display = "none";
+      if (m.esEstado) {
+        // Clic en estado → zoom al estado
+        zoomEstado(m.estadoObj);
+      } else {
+        buscarMunicipio(m);
+        // Si hay un estadoObj y no estamos ya en él, hacer zoom al estado
+        if (m.estadoObj && estadoActivo?.id !== m.estadoObj.id) zoomEstado(m.estadoObj);
+      }
+    });
+    listaMun.appendChild(div);
+  });
+  listaMun.style.display = "block";
+});
+
+inputMun.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    const q = inputMun.value.toLowerCase().trim();
+    const fuente = window.CIUDADES_BUSQUEDA || MUNICIPIOS;
+    const match = fuente.find(m => m.nombre.toLowerCase() === q);
+    if (match) { listaMun.style.display = "none"; buscarMunicipio(match); }
+  }
+});
+
+document.addEventListener("click", e => {
+  if (!e.target.closest(".autocomplete-container")) listaMun.style.display = "none";
+});
+
+/* ──────────────────────────────────────────
+   PANEL TOGGLE
+   ────────────────────────────────────────── */
+function togglePanel(id, header) {
+  const panel   = document.getElementById(id);
+  const toggle  = header.querySelector(".panel-toggle");
+  const visible = panel.classList.toggle("visible");
+  toggle.classList.toggle("abierto", visible);
+}
+
+/* ──────────────────────────────────────────
+   MAPA LEAFLET — MÉXICO (32 ESTADOS)
+   ────────────────────────────────────────── */
+
+// ── Datos de los 32 estados con ciudades principales ──
+const ESTADOS = [
+  { id:"AGS",  nombre:"Aguascalientes",      capital:"Aguascalientes",       lat:21.8835, lon:-102.2912, zoom:10,
+    ciudades:[{n:"Aguascalientes",lat:21.8835,lon:-102.2912},{n:"Jesús María",lat:21.9667,lon:-102.3500},{n:"Calvillo",lat:21.8478,lon:-102.7183},{n:"Rincón de Romos",lat:22.2297,lon:-102.3134}]},
+  { id:"BC",   nombre:"Baja California",     capital:"Mexicali",             lat:32.6245, lon:-115.4522, zoom:7,
+    ciudades:[{n:"Mexicali",lat:32.6245,lon:-115.4522},{n:"Tijuana",lat:32.5149,lon:-117.0382},{n:"Ensenada",lat:31.8667,lon:-116.5960},{n:"Tecate",lat:32.5736,lon:-116.6267},{n:"San Felipe",lat:31.0197,lon:-114.8419}]},
+  { id:"BCS",  nombre:"Baja California Sur", capital:"La Paz",               lat:24.1426, lon:-110.3128, zoom:7,
+    ciudades:[{n:"La Paz",lat:24.1426,lon:-110.3128},{n:"Los Cabos",lat:22.8905,lon:-109.9167},{n:"Ciudad Constitución",lat:25.0417,lon:-111.6667},{n:"Guerrero Negro",lat:27.9756,lon:-114.0406}]},
+  { id:"CAM",  nombre:"Campeche",            capital:"Campeche",             lat:19.8301, lon:-90.5349,  zoom:8,
+    ciudades:[{n:"Campeche",lat:19.8301,lon:-90.5349},{n:"Ciudad del Carmen",lat:18.6500,lon:-91.8333},{n:"Champotón",lat:19.3500,lon:-90.7167}]},
+  { id:"CHIS", nombre:"Chiapas",             capital:"Tuxtla Gutiérrez",     lat:16.7521, lon:-93.1152,  zoom:8,
+    ciudades:[{n:"Tuxtla Gutiérrez",lat:16.7521,lon:-93.1152},{n:"San Cristóbal de las Casas",lat:16.7370,lon:-92.6376},{n:"Tapachula",lat:14.9000,lon:-92.2667},{n:"Comitán",lat:16.2500,lon:-92.1333},{n:"Ocosingo",lat:16.9036,lon:-92.0947}]},
+  { id:"CHIH", nombre:"Chihuahua",           capital:"Chihuahua",            lat:28.6329, lon:-106.0691, zoom:7,
+    ciudades:[{n:"Chihuahua",lat:28.6329,lon:-106.0691},{n:"Ciudad Juárez",lat:31.7400,lon:-106.4870},{n:"Delicias",lat:28.1833,lon:-105.4667},{n:"Cuauhtémoc",lat:28.4000,lon:-106.8667},{n:"Parral",lat:26.9333,lon:-105.6667}]},
+  { id:"CDMX", nombre:"Ciudad de México",    capital:"CDMX",                 lat:19.4326, lon:-99.1332,  zoom:11,
+    ciudades:[{n:"Centro Histórico",lat:19.4326,lon:-99.1332},{n:"Xochimilco",lat:19.2650,lon:-99.1029},{n:"Tlalpan",lat:19.2951,lon:-99.1739},{n:"Iztapalapa",lat:19.3558,lon:-99.0782},{n:"Gustavo A. Madero",lat:19.4886,lon:-99.1131}]},
+  { id:"COAH", nombre:"Coahuila",            capital:"Saltillo",             lat:25.4232, lon:-100.9992, zoom:7,
+    ciudades:[{n:"Saltillo",lat:25.4232,lon:-100.9992},{n:"Torreón",lat:25.5333,lon:-103.4500},{n:"Monclova",lat:26.9000,lon:-101.4167},{n:"Piedras Negras",lat:28.7000,lon:-100.5167},{n:"Acuña",lat:29.3167,lon:-100.9333}]},
+  { id:"COL",  nombre:"Colima",              capital:"Colima",               lat:19.2452, lon:-103.7241, zoom:10,
+    ciudades:[{n:"Colima",lat:19.2452,lon:-103.7241},{n:"Manzanillo",lat:19.0500,lon:-104.3167},{n:"Tecomán",lat:18.9167,lon:-103.8667},{n:"Villa de Álvarez",lat:19.2667,lon:-103.7333}]},
+  { id:"DUR",  nombre:"Durango",             capital:"Durango",              lat:24.0277, lon:-104.6532, zoom:8,
+    ciudades:[{n:"Durango",lat:24.0277,lon:-104.6532},{n:"Gómez Palacio",lat:25.5667,lon:-103.5000},{n:"Lerdo",lat:25.5333,lon:-103.5167},{n:"Sgo. Papasquiaro",lat:25.0333,lon:-105.4167}]},
+  { id:"GTO",  nombre:"Guanajuato",          capital:"Guanajuato",           lat:21.0190, lon:-101.2574, zoom:9,
+    ciudades:[{n:"Guanajuato",lat:21.0190,lon:-101.2574},{n:"León",lat:21.1236,lon:-101.6860},{n:"Irapuato",lat:20.6764,lon:-101.3544},{n:"Celaya",lat:20.5236,lon:-100.8136},{n:"Salamanca",lat:20.5731,lon:-101.1956},{n:"Silao",lat:20.9378,lon:-101.4258}]},
+  { id:"GRO",  nombre:"Guerrero",            capital:"Chilpancingo",         lat:17.5510, lon:-99.5006,  zoom:8,
+    ciudades:[{n:"Chilpancingo",lat:17.5510,lon:-99.5006},{n:"Acapulco",lat:16.8531,lon:-99.8237},{n:"Iguala",lat:18.3456,lon:-99.5394},{n:"Zihuatanejo",lat:17.6392,lon:-101.5524},{n:"Taxco",lat:18.5539,lon:-99.6031}]},
+  { id:"HGO",  nombre:"Hidalgo",             capital:"Pachuca",              lat:20.1011, lon:-98.7591,  zoom:9,
+    ciudades:[{n:"Pachuca",lat:20.1011,lon:-98.7591},{n:"Tula",lat:20.0514,lon:-99.3444},{n:"Tulancingo",lat:20.0850,lon:-98.3617},{n:"Ixmiquilpan",lat:20.4878,lon:-99.2247}]},
+  { id:"JAL",  nombre:"Jalisco",             capital:"Guadalajara",          lat:20.6597, lon:-103.3496, zoom:8, destacado:true,
+    ciudades:[{n:"Guadalajara",lat:20.6597,lon:-103.3496},{n:"Zapopan",lat:20.7214,lon:-103.3918},{n:"San Pedro Tlaquepaque",lat:20.6411,lon:-103.3114},{n:"Tonalá",lat:20.6218,lon:-103.2339},{n:"Tlajomulco de Zúñiga",lat:20.4731,lon:-103.4424},{n:"Puerto Vallarta",lat:20.6534,lon:-105.2253},{n:"Tepatitlán de Morelos",lat:20.8148,lon:-102.7435},{n:"Lagos de Moreno",lat:21.3574,lon:-101.9298},{n:"Ocotlán",lat:20.3517,lon:-102.7637},{n:"Autlán de Navarro",lat:19.7730,lon:-104.3706},{n:"Zapotlán el Grande",lat:19.7031,lon:-103.4654},{n:"Ameca",lat:20.5478,lon:-104.0455},{n:"Tequila",lat:20.8789,lon:-103.8359},{n:"Chapala",lat:20.2939,lon:-103.1933}]},
+  { id:"MEX",  nombre:"Estado de México",    capital:"Toluca",               lat:19.2826, lon:-99.6557,  zoom:9,
+    ciudades:[{n:"Toluca",lat:19.2826,lon:-99.6557},{n:"Ecatepec",lat:19.6011,lon:-99.0542},{n:"Nezahualcóyotl",lat:19.4008,lon:-99.0225},{n:"Naucalpan",lat:19.4769,lon:-99.2361},{n:"Tlalnepantla",lat:19.5400,lon:-99.1950},{n:"Metepec",lat:19.2564,lon:-99.6053}]},
+  { id:"MICH", nombre:"Michoacán",           capital:"Morelia",              lat:19.7059, lon:-101.1950, zoom:8,
+    ciudades:[{n:"Morelia",lat:19.7059,lon:-101.1950},{n:"Uruapan",lat:19.4197,lon:-102.0628},{n:"Lázaro Cárdenas",lat:17.9583,lon:-102.1942},{n:"Apatzingán",lat:19.0864,lon:-102.3567},{n:"Zamora",lat:19.9831,lon:-102.2772},{n:"Pátzcuaro",lat:19.5153,lon:-101.6072}]},
+  { id:"MOR",  nombre:"Morelos",             capital:"Cuernavaca",           lat:18.9242, lon:-99.2216,  zoom:10,
+    ciudades:[{n:"Cuernavaca",lat:18.9242,lon:-99.2216},{n:"Jiutepec",lat:18.8847,lon:-99.1744},{n:"Cuautla",lat:18.8100,lon:-98.9433},{n:"Temixco",lat:18.8506,lon:-99.2364}]},
+  { id:"NAY",  nombre:"Nayarit",             capital:"Tepic",                lat:21.5042, lon:-104.8945, zoom:8,
+    ciudades:[{n:"Tepic",lat:21.5042,lon:-104.8945},{n:"Bahía de Banderas",lat:20.7544,lon:-105.2742},{n:"Compostela",lat:21.2347,lon:-104.8936},{n:"Santiago Ixcuintla",lat:21.8125,lon:-105.2025}]},
+  { id:"NL",   nombre:"Nuevo León",          capital:"Monterrey",            lat:25.6866, lon:-100.3161, zoom:9,
+    ciudades:[{n:"Monterrey",lat:25.6866,lon:-100.3161},{n:"Guadalupe",lat:25.6752,lon:-100.2606},{n:"San Nicolás de los Garza",lat:25.7461,lon:-100.3028},{n:"Apodaca",lat:25.7836,lon:-100.1886},{n:"Santa Catarina",lat:25.6736,lon:-100.4583}]},
+  { id:"OAX",  nombre:"Oaxaca",              capital:"Oaxaca de Juárez",     lat:17.0643, lon:-96.7225,  zoom:8,
+    ciudades:[{n:"Oaxaca de Juárez",lat:17.0643,lon:-96.7225},{n:"Salina Cruz",lat:16.1875,lon:-95.2000},{n:"Juchitán",lat:16.4333,lon:-95.0167},{n:"Tuxtepec",lat:18.0883,lon:-96.1194},{n:"Puerto Escondido",lat:15.8600,lon:-97.0722}]},
+  { id:"PUE",  nombre:"Puebla",              capital:"Puebla",               lat:19.0414, lon:-98.2063,  zoom:9,
+    ciudades:[{n:"Puebla",lat:19.0414,lon:-98.2063},{n:"Tehuacán",lat:18.4617,lon:-97.3933},{n:"San Martín Texmelucan",lat:19.2928,lon:-98.4356},{n:"Atlixco",lat:18.9086,lon:-98.4392},{n:"Huauchinango",lat:20.1786,lon:-98.0511}]},
+  { id:"QRO",  nombre:"Querétaro",           capital:"Querétaro",            lat:20.5888, lon:-100.3899, zoom:9,
+    ciudades:[{n:"Querétaro",lat:20.5888,lon:-100.3899},{n:"San Juan del Río",lat:20.3833,lon:-100.0000},{n:"Corregidora",lat:20.5264,lon:-100.4392},{n:"El Marqués",lat:20.6211,lon:-100.2339}]},
+  { id:"QROO", nombre:"Quintana Roo",        capital:"Chetumal",             lat:18.5001, lon:-88.2960,  zoom:8,
+    ciudades:[{n:"Chetumal",lat:18.5001,lon:-88.2960},{n:"Cancún",lat:21.1743,lon:-86.8466},{n:"Playa del Carmen",lat:20.6297,lon:-87.0739},{n:"Cozumel",lat:20.5083,lon:-86.9458},{n:"Tulum",lat:20.2114,lon:-87.4654}]},
+  { id:"SLP",  nombre:"San Luis Potosí",     capital:"San Luis Potosí",      lat:22.1565, lon:-100.9855, zoom:8,
+    ciudades:[{n:"San Luis Potosí",lat:22.1565,lon:-100.9855},{n:"Soledad de G. Sánchez",lat:22.1825,lon:-100.9306},{n:"Ciudad Valles",lat:21.9956,lon:-99.0181},{n:"Matehuala",lat:23.6500,lon:-100.6500},{n:"Rioverde",lat:21.9236,lon:-99.9847}]},
+  { id:"SIN",  nombre:"Sinaloa",             capital:"Culiacán",             lat:24.7994, lon:-107.3897, zoom:8,
+    ciudades:[{n:"Culiacán",lat:24.7994,lon:-107.3897},{n:"Mazatlán",lat:23.2494,lon:-106.4111},{n:"Los Mochis",lat:25.7964,lon:-108.9922},{n:"Guasave",lat:25.5667,lon:-108.4500},{n:"Guamúchil",lat:25.4609,lon:-108.0806}]},
+  { id:"SON",  nombre:"Sonora",              capital:"Hermosillo",           lat:29.0729, lon:-110.9559, zoom:7,
+    ciudades:[{n:"Hermosillo",lat:29.0729,lon:-110.9559},{n:"Ciudad Obregón",lat:27.4872,lon:-109.9308},{n:"Nogales",lat:31.3031,lon:-110.9400},{n:"San Luis Río Colorado",lat:32.4553,lon:-114.7744},{n:"Guaymas",lat:27.9184,lon:-110.8993}]},
+  { id:"TAB",  nombre:"Tabasco",             capital:"Villahermosa",         lat:17.9869, lon:-92.9303,  zoom:9,
+    ciudades:[{n:"Villahermosa",lat:17.9869,lon:-92.9303},{n:"Cárdenas",lat:18.0000,lon:-93.3667},{n:"Comalcalco",lat:18.2667,lon:-93.2167},{n:"Paraíso",lat:18.4000,lon:-93.2167}]},
+  { id:"TAMS", nombre:"Tamaulipas",          capital:"Ciudad Victoria",      lat:23.7369, lon:-99.1411,  zoom:8,
+    ciudades:[{n:"Ciudad Victoria",lat:23.7369,lon:-99.1411},{n:"Tampico",lat:22.2552,lon:-97.8686},{n:"Matamoros",lat:25.8833,lon:-97.5000},{n:"Nuevo Laredo",lat:27.4764,lon:-99.5147},{n:"Reynosa",lat:26.0817,lon:-98.2878}]},
+  { id:"TLAX", nombre:"Tlaxcala",            capital:"Tlaxcala",             lat:19.3182, lon:-98.2375,  zoom:10,
+    ciudades:[{n:"Tlaxcala",lat:19.3182,lon:-98.2375},{n:"Apizaco",lat:19.4167,lon:-98.1333},{n:"Huamantla",lat:19.3133,lon:-97.9214},{n:"Calpulalpan",lat:19.5919,lon:-98.5703}]},
+  { id:"VER",  nombre:"Veracruz",            capital:"Xalapa",               lat:19.5438, lon:-96.9102,  zoom:7,
+    ciudades:[{n:"Xalapa",lat:19.5438,lon:-96.9102},{n:"Veracruz",lat:19.1781,lon:-96.1422},{n:"Coatzacoalcos",lat:18.1333,lon:-94.4500},{n:"Córdoba",lat:18.8836,lon:-96.9369},{n:"Poza Rica",lat:20.5328,lon:-97.4606},{n:"Tuxpan",lat:20.9556,lon:-97.4050}]},
+  { id:"YUC",  nombre:"Yucatán",             capital:"Mérida",               lat:20.9670, lon:-89.6237,  zoom:9,
+    ciudades:[{n:"Mérida",lat:20.9670,lon:-89.6237},{n:"Valladolid",lat:20.6900,lon:-88.2019},{n:"Progreso",lat:21.2831,lon:-89.6636},{n:"Tizimín",lat:21.1417,lon:-88.1639}]},
+  { id:"ZAC",  nombre:"Zacatecas",           capital:"Zacatecas",            lat:22.7709, lon:-102.5832, zoom:8,
+    ciudades:[{n:"Zacatecas",lat:22.7709,lon:-102.5832},{n:"Fresnillo",lat:23.1750,lon:-102.8694},{n:"Guadalupe",lat:22.7500,lon:-102.5167},{n:"Jerez",lat:22.6444,lon:-103.0000}]},
+];
+
+// (isotermas eliminadas — ver backend/actualizar_gfs.py para datos GFS)
+
+
+// ── Estado del mapa ──
+let grupoMarcadores  = null;   // marcadores de estados (vista nacional)
+let grupoCiudades    = null;   // marcadores de ciudades (vista estatal)
+let estadoActivo     = null;   // objeto ESTADOS seleccionado actualmente
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+let mapaLeaflet = null;
+
+function colorPorTemp(t) {
+  if (t === null || t === undefined) return "#999";
+  if (t < 18) return "#2196F3";
+  if (t < 24) return "#4CAF50";
+  if (t < 30) return "#FF9800";
+  return "#F44336";
+}
+
+async function fetchTemperaturaRapida(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=America%2FMexico_City&forecast_days=1`;
+  try {
+    const r = await fetch(url);
+    const d = await r.json();
+    return { temp: d.current?.temperature_2m ?? null, code: d.current?.weather_code ?? 0 };
+  } catch(_) { return { temp: null, code: 0 }; }
+}
+
+// ── Inicializar mapa centrado en México ───────────────────────────────────────
+function inicializarMapa() {
+  if (mapaLeaflet) return;
+  mapaLeaflet = L.map("mapa-jalisco", {
+    center: [23.5, -102.0],
+    zoom: 5,
+    zoomControl: true,
+    scrollWheelZoom: true,
+  });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 16,
+  }).addTo(mapaLeaflet);
+  grupoMarcadores = L.layerGroup().addTo(mapaLeaflet);
+}
+
+// ── Marcador de estado (capital) ─────────────────────────────────────────────
+function crearMarcadorEstado(estado, temp, code) {
+  const color    = colorPorTemp(temp);
+  const wmoData  = wmo(code);
+  const tempStr  = temp !== null ? `${Math.round(temp)}°` : "—";
+  const esJal    = estado.destacado;
+
+  const html = `<div class="marcador-clima${esJal ? " marcador-destacado" : ""}" style="border-color:${color}">
+    <span class="mc-temp">${wmoData.icono} ${tempStr}</span>
+    <span class="mc-nombre">${estado.id}</span>
+  </div>`;
+
+  const ancla = esJal ? [44, 22] : [36, 18];
+  const icono = L.divIcon({ className: "", html, iconAnchor: ancla });
+  const marker = L.marker([estado.lat, estado.lon], { icon: icono });
+
+  marker.on("click", () => zoomEstado(estado));
+  marker.bindTooltip(estado.nombre, { direction: "top", offset: [0, -20] });
+  return marker;
+}
+
+// ── Vista nacional: marcadores de los 32 estados ─────────────────────────────
+async function cargarMarcadoresEstados() {
+  const loading = document.getElementById("mapa-loading");
+  const txt     = document.getElementById("mapa-loading-txt");
+  loading.style.display = "flex";
+  txt.textContent = "Cargando temperaturas...";
+
+  // Limpiar capas anteriores
+  if (grupoCiudades) { mapaLeaflet.removeLayer(grupoCiudades); grupoCiudades = null; }
+  grupoMarcadores.clearLayers();
+
+  // Fetch paralelo para los 32 estados
+  let i = 0;
+  await Promise.all(ESTADOS.map(async (estado) => {
+    const { temp, code } = await fetchTemperaturaRapida(estado.lat, estado.lon);
+    const marker = crearMarcadorEstado(estado, temp, code);
+    grupoMarcadores.addLayer(marker);
+    txt.textContent = `Cargando: ${++i}/32 estados...`;
+  }));
+
+  loading.style.display = "none";
+
+  // Subtítulo y botón volver
+  document.getElementById("mapa-subtitulo").textContent = "— Haz clic en un estado para ver sus ciudades principales";
+  document.getElementById("btn-volver-wrap").style.display = "none";
+  estadoActivo = null;
+}
+
+// ── Vista estatal: zoom + marcadores de ciudades ──────────────────────────────
+async function zoomEstado(estado) {
+  estadoActivo = estado;
+  mapaLeaflet.setView([estado.lat, estado.lon], estado.zoom, { animate: true });
+
+  const loading = document.getElementById("mapa-loading");
+  const txt     = document.getElementById("mapa-loading-txt");
+  loading.style.display = "flex";
+  txt.textContent = `Cargando ciudades de ${estado.nombre}...`;
+
+  // Ocultar marcadores nacionales, mostrar botón volver
+  mapaLeaflet.removeLayer(grupoMarcadores);
+  document.getElementById("btn-volver-wrap").style.display = "";
+  document.getElementById("mapa-subtitulo").textContent = `— ${estado.nombre} · haz clic en una ciudad`;
+
+  // Crear grupo de ciudades
+  if (grupoCiudades) { mapaLeaflet.removeLayer(grupoCiudades); }
+  grupoCiudades = L.layerGroup().addTo(mapaLeaflet);
+
+  // Cargar datos de ciudades en paralelo
+  await Promise.all(estado.ciudades.map(async (ciudad) => {
+    const { temp, code } = await fetchTemperaturaRapida(ciudad.lat, ciudad.lon);
+    const color   = colorPorTemp(temp);
+    const wmoData = wmo(code);
+    const tempStr = temp !== null ? `${Math.round(temp)}°` : "—";
+
+    const html = `<div class="marcador-clima" style="border-color:${color}">
+      <span class="mc-temp">${wmoData.icono} ${tempStr}</span>
+      <span class="mc-nombre">${ciudad.n.replace("San Pedro ", "")}</span>
+    </div>`;
+
+    const icono  = L.divIcon({ className: "", html, iconAnchor: [40, 20] });
+    const marker = L.marker([ciudad.lat, ciudad.lon], { icon: icono }).addTo(grupoCiudades);
+
+    marker.on("click", () => {
+      const loc = { nombre: ciudad.n, lat: ciudad.lat, lon: ciudad.lon,
+                    estado: estado.nombre, cp: null };
+      document.getElementById("input-municipio").value = ciudad.n;
+      buscarMunicipio(loc);
+      setTimeout(() => {
+        document.getElementById("resultado")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 400);
+    });
+  }));
+
+  loading.style.display = "none";
+}
+
+// ── Volver a la vista nacional ────────────────────────────────────────────────
+function volverAMexico() {
+  if (grupoCiudades) { mapaLeaflet.removeLayer(grupoCiudades); grupoCiudades = null; }
+  mapaLeaflet.addLayer(grupoMarcadores);
+  mapaLeaflet.setView([23.5, -102.0], 5, { animate: true });
+  document.getElementById("btn-volver-wrap").style.display = "none";
+  document.getElementById("mapa-subtitulo").textContent = "— Haz clic en un estado para ver sus ciudades principales";
+  estadoActivo = null;
+}
+
+// ── Función principal del mapa ────────────────────────────────────────────────
+async function cargarDatosMapa() {
+  inicializarMapa();
+  await cargarMarcadoresEstados();
+}
+
+/* ──────────────────────────────────────────
+   CAPA RADAR — RainViewer + NASA GPM histórico
+   ────────────────────────────────────────── */
+let capaSatelite    = null;
+let sateliteActivo  = false;
+let intervalSatelite = null;
+
+// Animación de frames
+let radarFrames     = [];   // todos los frames past de RainViewer
+let radarFrameIdx   = 0;    // frame actualmente mostrado
+let radarPlayInt    = null; // intervalo de animación
+
+function mostrarLeyendaRadar(visible) {
+  document.getElementById("leyenda-temperatura").style.display = visible ? "none" : "";
+  document.getElementById("leyenda-radar").classList.toggle("visible", visible);
+  document.getElementById("radar-panel").classList.toggle("visible", visible);
+}
+
+function ocultarMarcadores() {
+  if (grupoMarcadores) mapaLeaflet.removeLayer(grupoMarcadores);
+  if (grupoCiudades)   mapaLeaflet.removeLayer(grupoCiudades);
+}
+function restaurarMarcadores() {
+  if (grupoMarcadores) mapaLeaflet.addLayer(grupoMarcadores);
+  if (grupoCiudades)   mapaLeaflet.addLayer(grupoCiudades);
+}
+
+// Muestra un frame concreto en el mapa
+function mostrarFrameRadar(frame) {
+  const url = `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/4/1_1.png`;
+  if (capaSatelite) mapaLeaflet.removeLayer(capaSatelite);
+  capaSatelite = L.tileLayer(url, { opacity: 0.80, zIndex: 6,
+    attribution: '🌧️ <a href="https://rainviewer.com" target="_blank">RainViewer</a>' }).addTo(mapaLeaflet);
+
+  const hora = new Date(frame.time * 1000).toLocaleTimeString("es-MX", { hour:"2-digit", minute:"2-digit" });
+  document.getElementById("radar-hora-display").textContent = hora;
+
+  // Actualizar botón principal
+  const btn = document.getElementById("btn-satelite");
+  btn.textContent = `🌧️ Lluvia ${hora}`;
+
+  // Resaltar tick activo en la línea de tiempo
+  document.querySelectorAll(".radar-tick").forEach((el, i) => {
+    el.classList.toggle("activo", i === radarFrameIdx);
+  });
+}
+
+// Construye la línea de tiempo de ticks clicables
+function construirTimeline() {
+  const tl = document.getElementById("radar-timeline");
+  tl.innerHTML = "";
+  radarFrames.forEach((f, i) => {
+    const tick = document.createElement("div");
+    tick.className = "radar-tick" + (i === radarFrameIdx ? " activo" : "");
+    tick.title = new Date(f.time * 1000).toLocaleTimeString("es-MX", { hour:"2-digit", minute:"2-digit" });
+    tick.onclick = () => { radarPause(); radarFrameIdx = i; mostrarFrameRadar(radarFrames[i]); };
+    tl.appendChild(tick);
+  });
+}
+
+function radarPause() {
+  clearInterval(radarPlayInt);
+  radarPlayInt = null;
+  const b = document.getElementById("btn-radar-play");
+  if (b) { b.textContent = "▶ Animar"; b.classList.remove("activo"); }
+}
+function radarPlay() {
+  if (radarPlayInt || !radarFrames.length) return;
+  const b = document.getElementById("btn-radar-play");
+  if (b) { b.textContent = "⏸ Pausar"; b.classList.add("activo"); }
+  radarPlayInt = setInterval(() => {
+    radarFrameIdx = (radarFrameIdx + 1) % radarFrames.length;
+    mostrarFrameRadar(radarFrames[radarFrameIdx]);
+  }, 700);
+}
+function toggleRadarPlay() { radarPlayInt ? radarPause() : radarPlay(); }
+function radarPrevFrame() { radarPause(); radarFrameIdx = Math.max(0, radarFrameIdx - 1); mostrarFrameRadar(radarFrames[radarFrameIdx]); }
+function radarNextFrame() { radarPause(); radarFrameIdx = Math.min(radarFrames.length - 1, radarFrameIdx + 1); mostrarFrameRadar(radarFrames[radarFrameIdx]); }
+
+// Carga frame histórico con NASA IMERG (capa confirmada: IMERG_Precipitation_Rate)
+async function cargarRadarHistorico() {
+  const fecha = document.getElementById("radar-fecha-hist").value;
+  const hora  = document.getElementById("radar-hora-hist").value || "12:00";
+  if (!fecha) { alert("Selecciona una fecha"); return; }
+
+  // NASA IMERG tiene resolución de 30 minutos → redondear al más cercano
+  const [h, m] = hora.split(":").map(Number);
+  const minR = m < 30 ? "00" : "30";
+  const timeStr = `${fecha}T${String(h).padStart(2,"0")}:${minR}:00Z`;
+
+  radarPause();
+  if (capaSatelite) { mapaLeaflet.removeLayer(capaSatelite); capaSatelite = null; }
+
+  // NASA GIBS → IMERG_Precipitation_Rate (30 min, libre, sin API key)
+  // Capa verificada: responde 200. TileMatrixSet: GoogleMapsCompatible_Level6, zoom máx 6
+  const gpmUrl = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/IMERG_Precipitation_Rate/default/${timeStr}/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png`;
+  capaSatelite = L.tileLayer(gpmUrl, { opacity: 0.85, zIndex: 6, maxZoom: 6,
+    attribution: '🛰️ <a href="https://gpm.nasa.gov" target="_blank">NASA IMERG · Precipitación</a>' }).addTo(mapaLeaflet);
+
+  document.getElementById("radar-hora-display").textContent = `${fecha} ${String(h).padStart(2,"0")}:${minR} UTC`;
+  document.getElementById("btn-satelite").textContent = `🌧️ IMERG ${fecha}`;
+}
+
+// Volver a tiempo real desde histórico
+function volverRadarTiempoReal() {
+  radarPause();
+  if (capaSatelite) { mapaLeaflet.removeLayer(capaSatelite); capaSatelite = null; }
+  if (radarFrames.length) {
+    radarFrameIdx = radarFrames.length - 1;
+    mostrarFrameRadar(radarFrames[radarFrameIdx]);
+  }
+}
+
+async function toggleSatelite() {
+  const btn = document.getElementById("btn-satelite");
+
+  if (sateliteActivo) {
+    radarPause();
+    if (capaSatelite) { mapaLeaflet.removeLayer(capaSatelite); capaSatelite = null; }
+    if (intervalSatelite) { clearInterval(intervalSatelite); intervalSatelite = null; }
+    sateliteActivo = false;
+    radarFrames = [];
+    btn.classList.remove("activo");
+    btn.textContent = "🌧️ Lluvia";
+    btn.title = "Lluvia en tiempo real y datos históricos";
+    btn.disabled = false;
+    restaurarMarcadores();
+    mostrarLeyendaRadar(false);
+    return;
+  }
+
+  // Desactivar LST si estaba activa
+  if (lstActivo) toggleLST();
+
+  btn.textContent = "⏳ Cargando...";
+  btn.disabled = true;
+
+  try {
+    const r = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+    if (!r.ok) throw new Error("RainViewer no disponible");
+    const d = await r.json();
+
+    radarFrames = d.radar?.past || [];
+    if (!radarFrames.length) throw new Error("Sin frames de radar disponibles");
+
+    // Mostrar el frame más reciente
+    radarFrameIdx = radarFrames.length - 1;
+    ocultarMarcadores();
+    mostrarFrameRadar(radarFrames[radarFrameIdx]);
+    construirTimeline();
+
+    // Poner fecha de hoy por defecto en el selector histórico
+    document.getElementById("radar-fecha-hist").value = new Date().toISOString().slice(0, 10);
+
+    sateliteActivo = true;
+    btn.classList.add("activo");
+    mostrarLeyendaRadar(true);
+
+    // Auto-actualizar frames cada 10 min
+    intervalSatelite = setInterval(async () => {
+      try {
+        const r2 = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+        const d2 = await r2.json();
+        radarFrames = d2.radar?.past || radarFrames;
+        radarFrameIdx = radarFrames.length - 1;
+        mostrarFrameRadar(radarFrames[radarFrameIdx]);
+        construirTimeline();
+      } catch(_) {}
+    }, 10 * 60 * 1000);
+
+  } catch(e) {
+    btn.textContent = "🌧️ Lluvia";
+    btn.title = `Error: ${e.message}`;
+    console.error("Radar:", e);
+    restaurarMarcadores();
+  }
+
+  btn.disabled = false;
+}
+
+/* ──────────────────────────────────────────
+   PANTALLA COMPLETA
+   ────────────────────────────────────────── */
+function toggleFullscreen() {
+  const el = document.getElementById("mapa-jalisco");
+  const btn = document.getElementById("btn-fullscreen");
+  if (!document.fullscreenElement) {
+    el.requestFullscreen().then(() => {
+      btn.textContent = "✕ Salir";
+      btn.title = "Salir de pantalla completa";
+      // Leaflet necesita invalidar tamaño al cambiar dimensiones
+      setTimeout(() => mapaLeaflet.invalidateSize(), 200);
+    }).catch(() => {});
+  } else {
+    document.exitFullscreen().then(() => {
+      btn.textContent = "⛶ Pantalla completa";
+      btn.title = "Pantalla completa";
+      setTimeout(() => mapaLeaflet.invalidateSize(), 200);
+    }).catch(() => {});
+  }
+}
+// Actualizar botón si el usuario sale con Esc
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) {
+    const btn = document.getElementById("btn-fullscreen");
+    if (btn) { btn.textContent = "⛶ Pantalla completa"; btn.classList.remove("activo"); }
+    setTimeout(() => { if (mapaLeaflet) mapaLeaflet.invalidateSize(); }, 200);
+  }
+});
+
+/* ──────────────────────────────────────────
+   CAPA LST — Temperatura Superficial MODIS (NASA GIBS)
+   Capa: MODIS_Terra_Land_Surface_Temp_Day
+   TileMatrixSet: GoogleMapsCompatible_Level7 (verificado: devuelve 200)
+   Resolución: diaria, disponible desde 2000
+   ────────────────────────────────────────── */
+let capaLST    = null;
+let lstActivo  = false;
+
+// Genera la barra de leyenda LST extrayendo colores reales del tile de NASA GIBS
+// Carga el tile global (zoom 0) con la fecha dada, extrae píxeles únicos,
+// los ordena de frío (azul-púrpura) a caliente (naranja) y los pinta en el canvas.
+function generarLeyendaLSTdesdeNASA(fecha) {
+  const canvas = document.getElementById("lst-legend-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+
+  // Mostrar gradiente provisional mientras carga
+  const grad = ctx.createLinearGradient(0, 0, W, 0);
+  grad.addColorStop(0,    "rgb(85,0,255)");
+  grad.addColorStop(0.33, "rgb(0,189,255)");
+  grad.addColorStop(0.5,  "rgb(0,255,255)");
+  grad.addColorStop(0.67, "rgb(77,255,77)");
+  grad.addColorStop(0.83, "rgb(200,255,0)");
+  grad.addColorStop(1,    "rgb(255,199,0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Cargar tile zoom-0 (todo el mundo) con CORS
+  const tileUrl = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Land_Surface_Temp_Day/default/${fecha}/GoogleMapsCompatible_Level7/0/0/0.png`;
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    // Extraer todos los píxeles no-transparentes en un canvas temporal
+    const tmp = document.createElement("canvas");
+    tmp.width = img.width; tmp.height = img.height;
+    const tctx = tmp.getContext("2d");
+    tctx.drawImage(img, 0, 0);
+    const data = tctx.getImageData(0, 0, img.width, img.height).data;
+
+    // Recolectar colores únicos con su matiz (hue)
+    const colores = {};
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+      if (a < 20) continue;
+      const key = `${r},${g},${b}`;
+      if (!colores[key]) {
+        // Calcular hue
+        const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+        let h = 0;
+        if (d > 0) {
+          if (max === r) h = ((g - b) / d + 6) % 6 * 60;
+          else if (max === g) h = ((b - r) / d + 2) * 60;
+          else h = ((r - g) / d + 4) * 60;
+        }
+        colores[key] = h;
+      }
+    }
+
+    // Ordenar: hue alto (azul/púrpura ~270°) = frío → hue bajo (naranja ~24°) = caliente
+    // El colormap de MODIS va de hue ~286 (frío) a hue ~24 (caliente), decreciente
+    const ordenados = Object.entries(colores)
+      .sort((a, b) => b[1] - a[1])  // mayor hue primero = más frío primero
+      .map(([rgb]) => `rgb(${rgb})`);
+
+    if (ordenados.length < 5) return; // tile sin datos, mantener gradiente provisional
+
+    // Dibujar cada color como una franja vertical proporcional
+    const paso = W / ordenados.length;
+    ordenados.forEach((color, i) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.floor(i * paso), 0, Math.ceil(paso) + 1, H);
+    });
+
+    // Bordes redondeados
+    ctx.globalCompositeOperation = "destination-in";
+    const r = 5;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, W, H, r);
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+  };
+  img.onerror = () => {}; // mantener gradiente provisional si falla
+  img.src = tileUrl;
+}
+
+function mostrarLeyendaLST(visible) {
+  document.getElementById("leyenda-temperatura").style.display = visible ? "none" : "";
+  document.getElementById("leyenda-lst").classList.toggle("visible", visible);
+  document.getElementById("lst-panel").classList.toggle("visible", visible);
+}
+
+function cargarLSTCapaFecha(fechaStr) {
+  if (capaLST) { mapaLeaflet.removeLayer(capaLST); capaLST = null; }
+  const url = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Land_Surface_Temp_Day/default/${fechaStr}/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png`;
+  capaLST = L.tileLayer(url, {
+    opacity: 0.80, zIndex: 6, maxZoom: 7,
+    attribution: '🌡️ <a href="https://nasa.gov" target="_blank">NASA MODIS · LST</a>'
+  }).addTo(mapaLeaflet);
+  document.getElementById("lst-fecha-display").textContent = fechaStr;
+  document.getElementById("btn-lst").textContent = `🌡️ Temp. Sup. ${fechaStr.slice(5)}`; // MM-DD
+  // Generar leyenda desde los colores reales del tile NASA
+  generarLeyendaLSTdesdeNASA(fechaStr);
+}
+
+function cargarLSTHoy() {
+  const hoy = new Date();
+  // MODIS LST tiene ~1 día de retraso; usar ayer para asegurar disponibilidad
+  hoy.setDate(hoy.getDate() - 1);
+  const fechaStr = hoy.toISOString().slice(0, 10);
+  document.getElementById("lst-fecha").value = fechaStr;
+  cargarLSTCapaFecha(fechaStr);
+}
+
+function cargarLSTFecha() {
+  const fecha = document.getElementById("lst-fecha").value;
+  if (!fecha) { alert("Selecciona una fecha"); return; }
+  cargarLSTCapaFecha(fecha);
+}
+
+function toggleLST() {
+  const btn = document.getElementById("btn-lst");
+
+  if (lstActivo) {
+    if (capaLST) { mapaLeaflet.removeLayer(capaLST); capaLST = null; }
+    lstActivo = false;
+    btn.classList.remove("activo");
+    btn.textContent = "🌡️ Temp. Sup.";
+    restaurarMarcadores();
+    mostrarLeyendaLST(false);
+    return;
+  }
+
+  // Desactivar lluvia si estaba activa (capas se excluyen)
+  if (sateliteActivo) toggleSatelite();
+
+  ocultarMarcadores();
+  lstActivo = true;
+  btn.classList.add("activo");
+  mostrarLeyendaLST(true);
+
+  // Poner fecha de ayer por defecto y cargar
+  cargarLSTHoy();
+}
+
+/* ──────────────────────────────────────────
+   CARGA INICIAL → Mapa México + Guadalajara
+   ────────────────────────────────────────── */
+window.addEventListener("load", () => {
+  // Construir índice de búsqueda con todas las ciudades de todos los estados
+  window.CIUDADES_BUSQUEDA = [];
+  ESTADOS.forEach(estado => {
+    estado.ciudades.forEach(c => {
+      window.CIUDADES_BUSQUEDA.push({
+        nombre: c.n,
+        lat: c.lat,
+        lon: c.lon,
+        estado: estado.nombre,
+        id: estado.id,
+        estadoObj: estado,
+      });
+    });
+    // Añadir el estado mismo como opción
+    window.CIUDADES_BUSQUEDA.push({
+      nombre: estado.nombre,
+      lat: estado.lat,
+      lon: estado.lon,
+      estado: estado.nombre,
+      id: estado.id,
+      esEstado: true,
+      estadoObj: estado,
+    });
+  });
+
+  // Iniciar mapa con marcadores de los 32 estados
+  cargarDatosMapa();
+
+
+
+  // Pronóstico inicial: URL params > localStorage > Guadalajara por defecto
+  const _urlParams   = new URLSearchParams(window.location.search);
+  const _ciudadURL   = (() => {
+    const c = _urlParams.get('ciudad');
+    const la = parseFloat(_urlParams.get('lat'));
+    const lo = parseFloat(_urlParams.get('lon'));
+    return (c && !isNaN(la) && !isNaN(lo)) ? { nombre: c, lat: la, lon: lo } : null;
+  })();
+  const _ciudadGuardada = (() => {
+    try { const s = localStorage.getItem('ultimaCiudad'); return s ? JSON.parse(s) : null; }
+    catch(e) { return null; }
+  })();
+  const ciudadInicial = _ciudadURL || _ciudadGuardada || { nombre: "Guadalajara", lat: 20.6597, lon: -103.3496 };
+  document.getElementById("input-municipio").value = ciudadInicial.nombre;
+  buscarMunicipio(ciudadInicial);
+});
+
+</script>
+</body>
+</html>
