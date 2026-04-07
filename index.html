@@ -159,8 +159,14 @@
       gap: 0;
       padding: 0 16px;
       border-bottom: 2px solid var(--terracota);
+      position: relative;
+      z-index: 500;
     }
-    .navbar-cutlaque a {
+    .navbar-cutlaque > li {
+      list-style: none;
+      position: relative;
+    }
+    .navbar-cutlaque > li > a {
       color: rgba(255,255,255,0.88);
       text-decoration: none;
       padding: 10px 16px;
@@ -169,17 +175,62 @@
       letter-spacing: 0.03em;
       text-transform: uppercase;
       transition: background 0.15s, color 0.15s;
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 4px;
       border-bottom: 2px solid transparent;
+      white-space: nowrap;
     }
-    .navbar-cutlaque a:hover,
-    .navbar-cutlaque a.activo {
+    .navbar-cutlaque > li > a:hover,
+    .navbar-cutlaque > li > a.activo {
       background: rgba(255,255,255,0.08);
       color: white;
       border-bottom: 2px solid var(--terracota-claro);
     }
-    .navbar-cutlaque a.activo {
+    .navbar-cutlaque > li > a.activo {
       color: var(--terracota-claro);
+    }
+    /* Flecha indicadora de submenú */
+    .navbar-cutlaque > li.has-sub > a::after {
+      content: '▾';
+      font-size: 0.70rem;
+      opacity: 0.70;
+      margin-left: 2px;
+    }
+    /* Submenú desplegable */
+    .navbar-cutlaque .submenu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: #3e3e3e;
+      min-width: 230px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      border-top: 2px solid var(--terracota);
+      border-radius: 0 0 6px 6px;
+      list-style: none;
+      z-index: 600;
+    }
+    .navbar-cutlaque > li:hover .submenu,
+    .navbar-cutlaque > li:focus-within .submenu {
+      display: block;
+    }
+    .navbar-cutlaque .submenu li a {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      padding: 9px 18px;
+      font-size: 0.80rem;
+      font-weight: 500;
+      display: block;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      transition: background 0.12s, color 0.12s;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .navbar-cutlaque .submenu li:last-child a { border-bottom: none; }
+    .navbar-cutlaque .submenu li a:hover {
+      background: var(--terracota);
+      color: white;
     }
 
     /* ===== BUSCADOR ===== */
@@ -954,7 +1005,8 @@
       .logo-texto p  { font-size: 0.88rem; }
       /* Navbar */
       .navbar-cutlaque { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; padding: 0 6px; }
-      .navbar-cutlaque a { padding: 9px 10px; font-size: 0.75rem; white-space: nowrap; }
+      .navbar-cutlaque > li > a { padding: 9px 10px; font-size: 0.75rem; white-space: nowrap; }
+      .navbar-cutlaque .submenu { display: none !important; } /* Sin submenú en móvil */
       /* Buscador */
       .buscador-seccion { padding: 14px 16px; flex-direction: column; gap: 10px; }
       .buscador-seccion input, .buscador-seccion select { min-width: unset; width: 100%; }
@@ -1018,15 +1070,49 @@
 </header>
 
 <!-- ===== BARRA DE NAVEGACIÓN ===== -->
-<nav class="navbar-cutlaque">
-  <a href="https://cutlaquepaque.udg.mx/" target="_blank" rel="noopener">Inicio</a>
-  <a href="https://cutlaquepaque.udg.mx/acerca-de" target="_blank" rel="noopener">Acerca de</a>
-  <a href="https://cutlaquepaque.udg.mx/oferta-academica" target="_blank" rel="noopener">Oferta Académica</a>
-  <a href="https://cutlaquepaque.udg.mx/noticias" target="_blank" rel="noopener">Noticias</a>
-  <a href="https://cutlaquepaque.udg.mx/agenda" target="_blank" rel="noopener">Agenda</a>
-  <a href="https://cutlaquepaque.udg.mx/multimedia" target="_blank" rel="noopener">Multimedia</a>
-  <a href="#" class="activo">🌤️ Clima</a>
-  <a href="https://cutlaquepaque.udg.mx/contacto" target="_blank" rel="noopener">Contacto</a>
+<nav>
+  <ul class="navbar-cutlaque">
+    <li>
+      <a href="https://cutlaquepaque.udg.mx/" target="_blank" rel="noopener">Inicio</a>
+    </li>
+    <li class="has-sub">
+      <a href="https://cutlaquepaque.udg.mx/acerca" target="_blank" rel="noopener">Acerca de CUTlaque</a>
+      <ul class="submenu">
+        <li><a href="https://cutlaquepaque.udg.mx/acerca/mision" target="_blank" rel="noopener">Misión</a></li>
+        <li><a href="https://cutlaquepaque.udg.mx/acerca/vision" target="_blank" rel="noopener">Visión</a></li>
+        <li><a href="https://cutlaquepaque.udg.mx/acerca/directorio" target="_blank" rel="noopener">Directorio</a></li>
+      </ul>
+    </li>
+    <li class="has-sub">
+      <a href="https://cutlaquepaque.udg.mx/oferta-academica" target="_blank" rel="noopener">Oferta Académica</a>
+      <ul class="submenu">
+        <li><a href="https://cutlaquepaque.udg.mx/oferta-academica/licenciatura-en-derecho" target="_blank" rel="noopener">Licenciatura en Derecho</a></li>
+        <li><a href="https://cutlaquepaque.udg.mx/oferta-academica/licenciatura-en-ingenieria-industrial" target="_blank" rel="noopener">Licenciatura en Ingeniería Industrial</a></li>
+        <li><a href="https://cutlaquepaque.udg.mx/oferta-academica/licenciatura-en-ingenieria-informatica" target="_blank" rel="noopener">Licenciatura en Ingeniería Informática</a></li>
+        <li><a href="https://cutlaquepaque.udg.mx/oferta-academica/licenciatura-en-negocios" target="_blank" rel="noopener">Licenciatura en Ingeniería en Negocios</a></li>
+        <li><a href="https://cutlaquepaque.udg.mx/oferta-academica/licenciatura-en-turismo" target="_blank" rel="noopener">Licenciatura en Turismo</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="https://cutlaquepaque.udg.mx/noticias" target="_blank" rel="noopener">Noticias</a>
+    </li>
+    <li>
+      <a href="https://cutlaquepaque.udg.mx/agenda" target="_blank" rel="noopener">Agenda</a>
+    </li>
+    <li class="has-sub">
+      <a href="https://cutlaquepaque.udg.mx/" target="_blank" rel="noopener">Multimedia</a>
+      <ul class="submenu">
+        <li><a href="https://cutlaquepaque.udg.mx/multimedia/galeria_imagenes" target="_blank" rel="noopener">Galería de imágenes</a></li>
+        <li><a href="https://cutlaquepaque.udg.mx/multimedia/galeria-video" target="_blank" rel="noopener">Galería de videos</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#" class="activo">🌤️ Clima</a>
+    </li>
+    <li>
+      <a href="https://cutlaquepaque.udg.mx/contact" target="_blank" rel="noopener">Contacto</a>
+    </li>
+  </ul>
 </nav>
 
 <!-- ===== MAPA ===== -->
@@ -1503,7 +1589,7 @@ const MUNICIPIOS = [
   { nombre:"Zapotlanejo",                 lat:20.6167, lon:-102.8667 },
 ];
 
-/* CODIGOS_POSTALES eliminado — ahora se usa la API de zippopotam.us */
+/* CODIGOS_POSTALES eliminado — ahora se usa Nominatim (OpenStreetMap) para geocodificación por CP */
 
 /* ──────────────────────────────────────────
    WMO WEATHER CODES
@@ -2087,7 +2173,8 @@ async function buscarMunicipio(mun) {
 
 /* ──────────────────────────────────────────
    BUSCAR POR CÓDIGO POSTAL (cualquier CP de México)
-   API: api.zippopotam.us — gratuita, sin token
+   API: Nominatim (OpenStreetMap) — gratuita, sin token
+   Devuelve municipio real y coordenadas precisas
    ────────────────────────────────────────── */
 async function buscarPorCP() {
   const cp = document.getElementById("input-cp").value.trim();
@@ -2101,19 +2188,26 @@ async function buscarPorCP() {
   document.getElementById("estado-inicial").style.display = "none";
 
   try {
-    const resp = await fetch(`https://api.zippopotam.us/mx/${cp}`);
-    if (!resp.ok) {
+    const url = `https://nominatim.openstreetmap.org/search?postalcode=${cp}&country=Mexico&format=json&limit=1&addressdetails=1&accept-language=es`;
+    const resp = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    if (!resp.ok) throw new Error("Error al consultar el servidor de geocodificación.");
+
+    const data = await resp.json();
+    if (!data || data.length === 0) {
       throw new Error("Código postal no encontrado. Verifica que sea un CP mexicano válido.");
     }
-    const data = await resp.json();
-    const lugar = data.places[0];
-    const nombre  = lugar["place name"];
-    const estado  = lugar["state"];
-    const lat     = parseFloat(lugar["latitude"]);
-    const lon     = parseFloat(lugar["longitude"]);
 
-    document.getElementById("input-municipio").value = `${nombre}, ${estado}`;
-    await buscarMunicipio({ nombre: `${nombre}, ${estado}`, lat, lon });
+    const lugar   = data[0];
+    const addr    = lugar.address;
+    // Usar municipio (county) o ciudad como nombre; fallback a display_name
+    const municipio = addr.county || addr.city || addr.town || addr.village || addr.suburb || '';
+    const estado    = addr.state || '';
+    const nombre    = municipio ? `${municipio}, ${estado}` : lugar.display_name.split(',').slice(0,2).join(',').trim();
+    const lat       = parseFloat(lugar.lat);
+    const lon       = parseFloat(lugar.lon);
+
+    document.getElementById("input-municipio").value = nombre;
+    await buscarMunicipio({ nombre, lat, lon });
   } catch(e) {
     document.getElementById("loading").style.display = "none";
     document.getElementById("estado-inicial").style.display = "block";
