@@ -1689,10 +1689,13 @@ async function fetchCalidadAire(lat, lon) {
       `latitude=${lat}&longitude=${lon}` +
       `&current=us_aqi,pm10,pm2_5,european_aqi` +
       `&timezone=America%2FMexico_City`;
-    const resp = await fetch(url);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    const resp = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
     if (!resp.ok) return null;
     return await resp.json();
-  } catch(e) { return null; }
+  } catch(e) { return null; } // Nunca bloquea la carga principal
 }
 
 /* ──────────────────────────────────────────
@@ -1719,7 +1722,10 @@ async function fetchHistorico(lat, lon, currentData) {
       `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum` +
       `&timezone=America%2FMexico_City`;
 
-    const resp = await fetch(url);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 18000); // 18s máximo
+    const resp = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
     if (!resp.ok) throw new Error('API no disponible');
     const hist = await resp.json();
 
@@ -1811,10 +1817,9 @@ function mostrarCalidadAire(aqiData) {
 }
 
 /* ──────────────────────────────────────────
-   FETCH OPEN-METEO
+   FETCH OPEN-METEO  (con timeout y reintento)
    ────────────────────────────────────────── */
 async function fetchClima(lat, lon) {
-  // Verificar si hay conectividad de red
   if (!navigator.onLine) {
     throw new Error("Sin conexión a internet. Verifica tu red e intenta de nuevo.");
   }
@@ -1828,25 +1833,39 @@ async function fetchClima(lat, lon) {
     `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,`+
     `wind_speed_10m,wind_direction_10m,precipitation,uv_index`+
     `&timezone=America%2FMexico_City&forecast_days=7&wind_speed_unit=kmh&temperature_unit=celsius`;
-  let resp;
-  try {
-    resp = await fetch(url);
-  } catch(netErr) {
-    // Error de red (CORS, sin internet, bloqueado por firewall, etc.)
-    throw new Error(
-      `No se pudo conectar con Open-Meteo. ` +
-      `Si abriste el archivo directamente (file://), intenta abrirlo desde un servidor web. ` +
-      `Detalle: ${netErr.message}`
-    );
+
+  // Hasta 3 intentos con backoff progresivo
+  let lastError;
+  for (let intento = 0; intento < 3; intento++) {
+    if (intento > 0) await new Promise(r => setTimeout(r, intento * 1500));
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 14000); // 14 segundos máximo
+    try {
+      const resp = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(timer);
+      if (!resp.ok) {
+        let detalle = "";
+        try { const j = await resp.json(); detalle = j.reason || ""; } catch(_) {}
+        throw new Error(`Error ${resp.status} del servicio meteorológico. ${detalle}`);
+      }
+      const data = await resp.json();
+      if (data.error) throw new Error(`API: ${data.reason}`);
+      return data;
+    } catch(e) {
+      clearTimeout(timer);
+      if (e.name === 'AbortError') {
+        lastError = new Error(`Tiempo de espera agotado. Verifica tu conexión a internet.`);
+      } else if (e.message.startsWith('Error ')) {
+        throw e; // error HTTP → no reintentar
+      } else {
+        lastError = e;
+      }
+    }
   }
-  if (!resp.ok) {
-    let detalle = "";
-    try { const j = await resp.json(); detalle = j.reason || ""; } catch(_) {}
-    throw new Error(`Servicio meteorológico respondió con error ${resp.status}. ${detalle}`);
-  }
-  const data = await resp.json();
-  if (data.error) throw new Error(`API: ${data.reason}`);
-  return data;
+  throw new Error(
+    `No se pudo conectar con Open-Meteo después de 3 intentos. ` +
+    `Detalle: ${lastError?.message || 'desconocido'}`
+  );
 }
 
 /* ──────────────────────────────────────────
@@ -2462,14 +2481,18 @@ async function cargarMarcadoresEstados() {
   if (grupoCiudades) { mapaLeaflet.removeLayer(grupoCiudades); grupoCiudades = null; }
   grupoMarcadores.clearLayers();
 
-  // Fetch paralelo para los 32 estados
+  // Fetch en lotes de 6 para no saturar conexiones (evita bloquear fetchClima)
   let i = 0;
-  await Promise.all(ESTADOS.map(async (estado) => {
-    const { temp, code } = await fetchTemperaturaRapida(estado.lat, estado.lon);
-    const marker = crearMarcadorEstado(estado, temp, code);
-    grupoMarcadores.addLayer(marker);
-    txt.textContent = `Cargando: ${++i}/32 estados...`;
-  }));
+  const LOTE = 6;
+  for (let inicio = 0; inicio < ESTADOS.length; inicio += LOTE) {
+    const lote = ESTADOS.slice(inicio, inicio + LOTE);
+    await Promise.all(lote.map(async (estado) => {
+      const { temp, code } = await fetchTemperaturaRapida(estado.lat, estado.lon);
+      const marker = crearMarcadorEstado(estado, temp, code);
+      grupoMarcadores.addLayer(marker);
+      txt.textContent = `Cargando: ${++i}/32 estados...`;
+    }));
+  }
 
   loading.style.display = "none";
 
@@ -2841,4 +2864,113 @@ function generarLeyendaLSTdesdeNASA(fecha) {
 }
 
 function mostrarLeyendaLST(visible) {
-  document.ge
+  document.getElementById("leyenda-temperatura").style.display = visible ? "none" : "";
+  document.getElementById("leyenda-lst").classList.toggle("visible", visible);
+  document.getElementById("lst-panel").classList.toggle("visible", visible);
+}
+
+function cargarLSTCapaFecha(fechaStr) {
+  if (capaLST) { mapaLeaflet.removeLayer(capaLST); capaLST = null; }
+  const url = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Land_Surface_Temp_Day/default/${fechaStr}/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png`;
+  capaLST = L.tileLayer(url, {
+    opacity: 0.80, zIndex: 6, maxZoom: 7,
+    attribution: '🌡️ <a href="https://nasa.gov" target="_blank">NASA MODIS · LST</a>'
+  }).addTo(mapaLeaflet);
+  document.getElementById("lst-fecha-display").textContent = fechaStr;
+  document.getElementById("btn-lst").textContent = `🌡️ Temp. Sup. ${fechaStr.slice(5)}`; // MM-DD
+  // Generar leyenda desde los colores reales del tile NASA
+  generarLeyendaLSTdesdeNASA(fechaStr);
+}
+
+function cargarLSTHoy() {
+  const hoy = new Date();
+  // MODIS LST tiene ~1 día de retraso; usar ayer para asegurar disponibilidad
+  hoy.setDate(hoy.getDate() - 1);
+  const fechaStr = hoy.toISOString().slice(0, 10);
+  document.getElementById("lst-fecha").value = fechaStr;
+  cargarLSTCapaFecha(fechaStr);
+}
+
+function cargarLSTFecha() {
+  const fecha = document.getElementById("lst-fecha").value;
+  if (!fecha) { alert("Selecciona una fecha"); return; }
+  cargarLSTCapaFecha(fecha);
+}
+
+function toggleLST() {
+  const btn = document.getElementById("btn-lst");
+
+  if (lstActivo) {
+    if (capaLST) { mapaLeaflet.removeLayer(capaLST); capaLST = null; }
+    lstActivo = false;
+    btn.classList.remove("activo");
+    btn.textContent = "🌡️ Temp. Sup.";
+    restaurarMarcadores();
+    mostrarLeyendaLST(false);
+    return;
+  }
+
+  // Desactivar lluvia si estaba activa (capas se excluyen)
+  if (sateliteActivo) toggleSatelite();
+
+  ocultarMarcadores();
+  lstActivo = true;
+  btn.classList.add("activo");
+  mostrarLeyendaLST(true);
+
+  // Poner fecha de ayer por defecto y cargar
+  cargarLSTHoy();
+}
+
+/* ──────────────────────────────────────────
+   CARGA INICIAL → Mapa México + Guadalajara
+   ────────────────────────────────────────── */
+window.addEventListener("load", () => {
+  // Construir índice de búsqueda con todas las ciudades de todos los estados
+  window.CIUDADES_BUSQUEDA = [];
+  ESTADOS.forEach(estado => {
+    estado.ciudades.forEach(c => {
+      window.CIUDADES_BUSQUEDA.push({
+        nombre: c.n,
+        lat: c.lat,
+        lon: c.lon,
+        estado: estado.nombre,
+        id: estado.id,
+        estadoObj: estado,
+      });
+    });
+    // Añadir el estado mismo como opción
+    window.CIUDADES_BUSQUEDA.push({
+      nombre: estado.nombre,
+      lat: estado.lat,
+      lon: estado.lon,
+      estado: estado.nombre,
+      id: estado.id,
+      esEstado: true,
+      estadoObj: estado,
+    });
+  });
+
+  // Pronóstico inicial: URL params > localStorage > Guadalajara por defecto
+  // (se lanza ANTES del mapa para no competir con las 32 peticiones de marcadores)
+  const _urlParams   = new URLSearchParams(window.location.search);
+  const _ciudadURL   = (() => {
+    const c = _urlParams.get('ciudad');
+    const la = parseFloat(_urlParams.get('lat'));
+    const lo = parseFloat(_urlParams.get('lon'));
+    return (c && !isNaN(la) && !isNaN(lo)) ? { nombre: c, lat: la, lon: lo } : null;
+  })();
+  const _ciudadGuardada = (() => {
+    try { const s = localStorage.getItem('ultimaCiudad'); return s ? JSON.parse(s) : null; }
+    catch(e) { return null; }
+  })();
+  const ciudadInicial = _ciudadURL || _ciudadGuardada || { nombre: "Guadalajara", lat: 20.6597, lon: -103.3496 };
+  document.getElementById("input-municipio").value = ciudadInicial.nombre;
+  // Lanzar pronóstico primero; el mapa arranca 800ms después para no saturar conexiones
+  buscarMunicipio(ciudadInicial);
+  setTimeout(() => cargarDatosMapa(), 800);
+});
+
+</script>
+</body>
+</html>
