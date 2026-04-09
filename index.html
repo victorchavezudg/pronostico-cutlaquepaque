@@ -907,27 +907,6 @@
     }
     .sst-info-item .sst-lbl  { color: var(--texto-suave); display: block; margin-bottom: 2px; }
     .sst-info-item .sst-val  { font-weight: 700; font-size: 0.82rem; }
-    /* Leyenda SST en mapa */
-    #leyenda-sst {
-      display: none;
-      pointer-events: none;
-      min-width: 170px;
-    }
-    #leyenda-sst.visible { display: block; }
-    #sst-leyenda-canvas {
-      display: block;
-      width: 100%;
-      height: 12px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      margin: 4px 0 2px;
-    }
-    .sst-leyenda-ticks {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.59rem;
-      color: var(--texto-suave);
-    }
     /* Panel WWLLN */
     #wwlln-panel .panel-capa-header { background: rgba(184,90,48,0.10); color: var(--terracota); }
     #wwlln-dias-grid {
@@ -1367,22 +1346,12 @@
           <span class="sst-val" id="sst-val-acapulco">—</span>
         </div>
       </div>
-      <div style="font-size:0.62rem;color:var(--texto-suave);padding:0 14px 8px;text-align:center;">
-        Open-Meteo Marine · Temperaturas actuales en playas de México
+            <div style="font-size:0.62rem;color:var(--texto-suave);padding:0 14px 8px;text-align:center;">
+        Open-Meteo Marine · NASA MUR SST (fondo) · <span id="sst-leyenda-rango">playas de México</span>
       </div>
     </div>
 
-    <!-- Leyenda SST en el mapa -->
-    <div class="mapa-leyenda" id="leyenda-sst">
-      <div style="font-weight:700;font-size:0.72rem;margin-bottom:2px;">🌊 Temp. Superficial Mar</div>
-      <canvas id="sst-leyenda-canvas" width="150" height="12"></canvas>
-      <div class="sst-leyenda-ticks">
-        <span>14°C</span><span>20°</span><span>26°</span><span>32°C</span>
-      </div>
-      <div id="sst-leyenda-rango" style="font-size:0.62rem;color:var(--texto-suave);margin-top:3px;text-align:center;">—</div>
-    </div>
-
-    <!-- Panel WWLLN — navegador de días -->
+        <!-- Panel WWLLN — navegador de días -->
     <div id="wwlln-panel">
       <div class="panel-capa-header">
         ⚡ Rayos WWLLN &mdash; <span id="wwlln-fecha-display">Cargando...</span>
@@ -3176,7 +3145,7 @@ let sstActivo   = false;
 let sstTileLayer = null;
 let sstPuntosLayer = null;
 
-// Paleta de color SST: 14°C (azul frío) → 34°C (rojo cálido)
+/// Paleta de color SST: 14°C (azul frío) → 34°C (rojo cálido)
 // Igual que la escala física del océano mexicano
 const SST_MIN = 14, SST_MAX = 34;
 const SST_PASOS = [
@@ -3375,7 +3344,6 @@ function mostrarLeyendaSST(visible) {
   } else {
     actualizarLeyendaTemperatura();
   }
-  document.getElementById("leyenda-sst").classList.toggle("visible", visible);
   document.getElementById("sst-panel").classList.toggle("visible", visible);
 }
 
@@ -3383,21 +3351,28 @@ async function activarSST() {
   const btn = document.getElementById("btn-sst");
   btn.textContent = "🌊 Cargando...";
 
-  document.getElementById("sst-fecha-display").textContent =
-    new Date().toISOString().slice(0, 10);
+  // 1. Tile NASA GIBS MUR SST — fondo oceánico continuo
+  //    MUR SST tiene 1-2 días de retraso; maxNativeZoom:7 evita 404 en zooms altos
+  if (sstTileLayer) { mapaLeaflet.removeLayer(sstTileLayer); sstTileLayer = null; }
+  const fechaSST = (() => { const d = new Date(); d.setDate(d.getDate() - 2); return d.toISOString().slice(0,10); })();
+  const sstUrl = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GHRSST_L4_MUR_Sea_Surface_Temperature/default/${fechaSST}/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png`;
+  sstTileLayer = L.tileLayer(sstUrl, {
+    opacity: 0.78, zIndex: 6,
+    maxNativeZoom: 7,
+    attribution: '🌊 <a href="https://podaac.jpl.nasa.gov/dataset/MUR-JPL-L4-GLOB-v4.1" target="_blank">NASA MUR SST · JPL</a>'
+  }).addTo(mapaLeaflet);
+  document.getElementById("sst-fecha-display").textContent = fechaSST;
 
-  // Puntos costeros con Open-Meteo Marine — paleta única, sin tile de fondo
+  // 2. Puntos costeros con Open-Meteo Marine — temperaturas exactas encima del tile
   const puntos = await cargarSSTCostera();
-
   if (puntos && puntos.length) {
     pintarPuntosCostera(puntos);
   } else {
     document.getElementById("sst-recomendacion").textContent = "Sin datos puntuales disponibles hoy.";
   }
 
-  // 3. Dibujar barras de temperatura calibradas
+  // 3. Dibujar barra de temperatura calibrada en el panel lateral
   dibujarBarraSST("sst-canvas-barra");
-  dibujarBarraSST("sst-leyenda-canvas");
 
   btn.textContent = "🌊 Temp. Mar ✓";
   btn.classList.add("activo");
