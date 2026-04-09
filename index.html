@@ -1368,7 +1368,7 @@
         </div>
       </div>
       <div style="font-size:0.62rem;color:var(--texto-suave);padding:0 14px 8px;text-align:center;">
-        NOAA CoralTemp 5km · NASA GIBS MUR SST · Datos diarios
+        Open-Meteo Marine · NASA GIBS MUR SST · Datos actuales
       </div>
     </div>
 
@@ -3287,53 +3287,35 @@ const SST_REF = {
   acapulco: { punto:"Acapulco",      elemId:"sst-val-acapulco" },
 };
 
-async function cargarSSTCostera(fechaStr) {
-  // NOAA CoralTemp ERDDAP: obtener SST para bounding box México
-  // stride=5 → resolución ~0.25° → buena cobertura sin exceso de datos
-  const url =
-    `https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.json` +
-    `?CRW_SST[(${fechaStr}T12:00:00Z)]` +
-    `[13.9:5:33.1][-122.1:5:-76.0]`;
-
-  let sst_grid = null;
-  try {
-    const r  = await fetch(url);
-    const gj = await r.json();
-    // gj.table.rows = [ [time, lat, lon, sst], ... ]
-    const rows = gj.table?.rows || [];
-    sst_grid = rows
-      .filter(row => row[3] !== null && !isNaN(row[3]))
-      .map(row => ({ lat: row[1], lon: row[2], sst: row[3] }));
-  } catch (e) {
-    console.warn("ERDDAP CoralTemp no disponible:", e);
-    return null;
-  }
-  return sst_grid;
+async function cargarSSTCostera() {
+  // Open-Meteo Marine API: SST actual por punto costero (CORS abierto, sin API key)
+  // Reemplaza ERDDAP CoralTemp que bloquea peticiones desde dominios externos.
+  const resultados = await Promise.allSettled(
+    SST_PUNTOS_COSTA.map(async p => {
+      const url = `https://marine-api.open-meteo.com/v1/marine` +
+        `?latitude=${p.lat}&longitude=${p.lon}` +
+        `&current=sea_surface_temperature&timezone=America%2FMexico_City`;
+      const r   = await fetch(url);
+      const d   = await r.json();
+      const sst = d.current?.sea_surface_temperature;
+      if (sst === null || sst === undefined || isNaN(sst)) return null;
+      return { ...p, sst };
+    })
+  );
+  const puntos = resultados
+    .filter(r => r.status === 'fulfilled' && r.value !== null)
+    .map(r => r.value);
+  return puntos.length ? puntos : null;
 }
 
-function encontrarSSTCercana(sst_grid, lat, lon) {
-  if (!sst_grid || !sst_grid.length) return null;
-  let mejor = null, minDist = Infinity;
-  for (const pt of sst_grid) {
-    const d = Math.hypot(pt.lat - lat, pt.lon - lon);
-    if (d < minDist) { minDist = d; mejor = pt.sst; }
-  }
-  return (minDist < 1.5) ? mejor : null; // máx ~150km de distancia
-}
-
-function pintarPuntosCostera(sst_grid) {
+function pintarPuntosCostera(puntosConTemp) {
   if (sstPuntosLayer) { mapaLeaflet.removeLayer(sstPuntosLayer); sstPuntosLayer = null; }
   sstPuntosLayer = L.layerGroup();
 
   let tempMin = Infinity, tempMax = -Infinity;
-  const puntosConTemp = [];
-
-  SST_PUNTOS_COSTA.forEach(p => {
-    const sst = encontrarSSTCercana(sst_grid, p.lat, p.lon);
-    if (sst === null) return;
-    if (sst < tempMin) tempMin = sst;
-    if (sst > tempMax) tempMax = sst;
-    puntosConTemp.push({ ...p, sst });
+  puntosConTemp.forEach(p => {
+    if (p.sst < tempMin) tempMin = p.sst;
+    if (p.sst > tempMax) tempMax = p.sst;
   });
 
   puntosConTemp.forEach(p => {
@@ -3346,7 +3328,7 @@ function pintarPuntosCostera(sst_grid) {
       `<b>🌊 ${p.nombre}</b> <small style="color:#888">${p.zona}</small><br>` +
       `<span style="font-size:1.3em;font-weight:700;color:${color}">${p.sst.toFixed(1)}°C</span><br>` +
       `<span style="font-size:0.85em">${rec.texto}</span><br>` +
-      `<small style="color:#888">NOAA CoralTemp · datos diarios</small>`
+      `<small style="color:#888">Open-Meteo Marine · datos actuales</small>`
     ).addTo(sstPuntosLayer);
   });
 
@@ -3401,7 +3383,7 @@ async function activarSST() {
   const btn = document.getElementById("btn-sst");
   btn.textContent = "🌊 Cargando...";
 
-  // Fecha: ayer (1 día de retraso en CoralTemp)
+  // Fecha: ayer para los tiles NASA GIBS (tienen ~1 día de retraso)
   const ayer = new Date();
   ayer.setDate(ayer.getDate() - 1);
   const fechaStr = ayer.toISOString().slice(0, 10);
@@ -3409,21 +3391,23 @@ async function activarSST() {
   document.getElementById("sst-fecha-display").textContent = fechaStr;
 
   // 1. Tile NASA GIBS MUR SST (fondo oceánico)
+  //    maxNativeZoom:7 — los tiles GIBS solo existen hasta zoom 7;
+  //    Leaflet los escala automáticamente para zooms mayores.
   const gibs_url =
     `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/` +
     `GHRSST_L4_MUR_Sea_Surface_Temperature/default/${fechaStr}/` +
     `GoogleMapsCompatible_Level7/{z}/{y}/{x}.png`;
   sstTileLayer = L.tileLayer(gibs_url, {
-    opacity: 0.60, zIndex: 5, maxZoom: 8,
+    opacity: 0.60, zIndex: 5, maxNativeZoom: 7,
     attribution: '🌊 <a href="https://mur.jpl.nasa.gov" target="_blank">NASA MUR SST · JPL</a>',
-    errorTileUrl: "",  // silenciar errores de tiles sin datos
+    errorTileUrl: "",
   }).addTo(mapaLeaflet);
 
-  // 2. Puntos costeros con ERDDAP CoralTemp
-  const sst_grid = await cargarSSTCostera(fechaStr);
+  // 2. Puntos costeros con Open-Meteo Marine (reemplaza ERDDAP — sin CORS)
+  const puntos = await cargarSSTCostera();
 
-  if (sst_grid && sst_grid.length) {
-    pintarPuntosCostera(sst_grid);
+  if (puntos && puntos.length) {
+    pintarPuntosCostera(puntos);
   } else {
     // Fallback: mostrar solo los tiles sin puntos
     document.getElementById("sst-recomendacion").textContent = "Sin datos puntuales disponibles hoy.";
