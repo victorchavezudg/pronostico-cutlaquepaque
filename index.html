@@ -3383,9 +3383,10 @@ async function activarSST() {
   const btn = document.getElementById("btn-sst");
   btn.textContent = "🌊 Cargando...";
 
-  // Fecha: ayer para los tiles NASA GIBS (tienen ~1 día de retraso)
+  // Fecha: 2 días de retraso — NASA MUR SST tarda ~48h en publicar
+  // (ayer = 404, hace 2 días = 200 confirmado)
   const ayer = new Date();
-  ayer.setDate(ayer.getDate() - 1);
+  ayer.setDate(ayer.getDate() - 2);
   const fechaStr = ayer.toISOString().slice(0, 10);
 
   document.getElementById("sst-fecha-display").textContent = fechaStr;
