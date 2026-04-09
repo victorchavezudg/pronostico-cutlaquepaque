@@ -755,6 +755,7 @@
       box-shadow: var(--sombra);
     }
     .mapa-leyenda b { display: block; margin-bottom: 4px; color: var(--verde-oscuro); }
+    .mapa-leyenda.hidden { display: none; }
     .leyenda-item { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
     .leyenda-dot { width: 10px; height: 10px; border-radius: 50%; }
     /* Control de capas del mapa */
@@ -838,7 +839,7 @@
       background: #aaa;
     }
     /* ── Estilo compartido para paneles de capa de mapa ── */
-    #lst-panel, #radar-panel {
+    #lst-panel, #radar-panel, #wwlln-panel, #sst-panel {
       display: none;
       position: absolute;
       bottom: 38px;
@@ -850,13 +851,123 @@
       padding: 0;
       box-shadow: var(--sombra);
       font-size: 0.75rem;
-      min-width: 280px;
+      min-width: 300px;
       text-align: center;
       backdrop-filter: blur(6px);
       overflow: hidden;
     }
-    #lst-panel.visible  { display: block; }
-    #radar-panel.visible { display: block; }
+    #lst-panel.visible    { display: block; }
+    #radar-panel.visible  { display: block; }
+    #wwlln-panel.visible  { display: block; }
+    #sst-panel.visible    { display: block; }
+
+    /* Panel SST */
+    #sst-panel .panel-capa-header { background: rgba(0,100,180,0.10); color: #005fa3; }
+    #sst-panel { min-width: 320px; }
+    .sst-barra-wrap {
+      padding: 8px 14px 4px;
+    }
+    #sst-canvas-barra {
+      display: block;
+      width: 100%;
+      height: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-bottom: 2px;
+    }
+    .sst-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.60rem;
+      color: var(--texto-suave);
+      padding: 0 1px;
+    }
+    .sst-recomendacion {
+      margin: 6px 14px 8px;
+      padding: 6px 10px;
+      border-radius: 7px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      text-align: center;
+      border: 1.5px solid var(--borde);
+      background: var(--beige);
+    }
+    #sst-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 0 14px 10px;
+      font-size: 0.70rem;
+    }
+    .sst-info-item {
+      background: var(--beige);
+      border-radius: 6px;
+      padding: 5px 8px;
+      border: 1px solid var(--borde);
+    }
+    .sst-info-item .sst-lbl  { color: var(--texto-suave); display: block; margin-bottom: 2px; }
+    .sst-info-item .sst-val  { font-weight: 700; font-size: 0.82rem; }
+    /* Leyenda SST en mapa */
+    #leyenda-sst {
+      display: none;
+      pointer-events: none;
+      min-width: 170px;
+    }
+    #leyenda-sst.visible { display: block; }
+    #sst-leyenda-canvas {
+      display: block;
+      width: 100%;
+      height: 12px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      margin: 4px 0 2px;
+    }
+    .sst-leyenda-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.59rem;
+      color: var(--texto-suave);
+    }
+    /* Panel WWLLN */
+    #wwlln-panel .panel-capa-header { background: rgba(184,90,48,0.10); color: var(--terracota); }
+    #wwlln-dias-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      padding: 8px 10px 10px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .wwlln-dia-btn {
+      background: var(--beige);
+      border: 1.5px solid var(--borde);
+      border-radius: 6px;
+      padding: 4px 2px;
+      cursor: pointer;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--texto);
+      transition: background 0.15s, border-color 0.15s;
+      line-height: 1.3;
+    }
+    .wwlln-dia-btn:hover   { background: rgba(184,90,48,0.12); border-color: var(--terracota); }
+    .wwlln-dia-btn.activo  { background: var(--terracota); color: white; border-color: var(--terracota); }
+    .wwlln-dia-btn .dia-num { font-size: 0.85rem; display: block; }
+    .wwlln-dia-btn .dia-rayos { opacity: 0.75; font-size: 0.62rem; font-weight: 400; }
+    #wwlln-status {
+      font-size: 0.72rem;
+      padding: 4px 10px 6px;
+      color: var(--texto-suave);
+      border-top: 1px solid var(--borde);
+    }
+    /* Leyenda rayos WWLLN */
+    #leyenda-wwlln {
+      display: none;
+      pointer-events: none;
+    }
+    #leyenda-wwlln.visible { display: block; }
+    .wwlln-leyenda-item { display: flex; align-items: center; gap: 5px; margin: 2px 0; }
+    .wwlln-leyenda-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
     /* Cabecera coloreada de cada panel */
     .panel-capa-header {
@@ -1131,6 +1242,8 @@
       </div>
       <button class="btn-capa" id="btn-satelite" onclick="toggleSatelite()" title="Lluvia en tiempo real y datos históricos">🌧️ Lluvia</button>
       <button class="btn-capa" id="btn-lst" onclick="toggleLST()" title="Temperatura superficial MODIS (NASA)">🌡️ Temp. Sup.</button>
+      <button class="btn-capa" id="btn-sst" onclick="toggleSST()" title="Temperatura superficial del mar — ¿Vale la pena ir a la playa?">🌊 Temp. Mar</button>
+      <button class="btn-capa" id="btn-wwlln" onclick="toggleWWLLN()" title="Rayos detectados por la red WWLLN — CU Tlaquepaque">⚡ Rayos</button>
       <button class="btn-capa" id="btn-fullscreen" onclick="toggleFullscreen()" title="Pantalla completa">⛶ Pantalla completa</button>
     </div>
 
@@ -1167,11 +1280,11 @@
       <!-- Canvas generado desde los tiles reales de NASA GIBS -->
       <canvas id="lst-legend-canvas" width="150" height="12"
         style="display:block;border-radius:4px;border:1px solid #ccc;margin:5px 0 2px;"></canvas>
-      <!-- Marcas de temperatura cada 10°C de -20 a 40°C -->
+      <!-- Marcas de temperatura cada 10°C de -20 a 40°C (7 valores) -->
       <div class="lst-ticks">
         <div class="lst-tick"></div><div class="lst-tick"></div><div class="lst-tick"></div>
         <div class="lst-tick"></div><div class="lst-tick"></div><div class="lst-tick"></div>
-        <div class="lst-tick"></div><div class="lst-tick"></div>
+        <div class="lst-tick"></div>
       </div>
       <div class="lst-marcas">
         <span>-20</span>
@@ -1220,6 +1333,78 @@
         <button id="btn-radar-play" style="display:none"></button>
       </div>
     </div>
+
+    <!-- Panel SST — Temperatura del mar -->
+    <div id="sst-panel">
+      <div class="panel-capa-header">
+        🌊 Temperatura del Mar &mdash; <span id="sst-fecha-display">cargando...</span>
+      </div>
+      <!-- Barra de temperatura calibrada -->
+      <div class="sst-barra-wrap">
+        <canvas id="sst-canvas-barra" width="280" height="14"></canvas>
+        <div class="sst-ticks" id="sst-ticks-labels">
+          <span>14°C</span><span>18°</span><span>22°</span><span>26°</span><span>30°</span><span>34°C</span>
+        </div>
+      </div>
+      <!-- Recomendación playa -->
+      <div class="sst-recomendacion" id="sst-recomendacion">🌊 Calculando...</div>
+      <!-- Info por zona -->
+      <div id="sst-info-grid">
+        <div class="sst-info-item">
+          <span class="sst-lbl">🌊 Pacífico (Jalisco)</span>
+          <span class="sst-val" id="sst-val-pacifico">—</span>
+        </div>
+        <div class="sst-info-item">
+          <span class="sst-lbl">🏝️ Caribe (Cancún)</span>
+          <span class="sst-val" id="sst-val-caribe">—</span>
+        </div>
+        <div class="sst-info-item">
+          <span class="sst-lbl">⛵ Golfo (Veracruz)</span>
+          <span class="sst-val" id="sst-val-golfo">—</span>
+        </div>
+        <div class="sst-info-item">
+          <span class="sst-lbl">🌅 Pacífico (Acapulco)</span>
+          <span class="sst-val" id="sst-val-acapulco">—</span>
+        </div>
+      </div>
+      <div style="font-size:0.62rem;color:var(--texto-suave);padding:0 14px 8px;text-align:center;">
+        NOAA CoralTemp 5km · NASA GIBS MUR SST · Datos diarios
+      </div>
+    </div>
+
+    <!-- Leyenda SST en el mapa -->
+    <div class="mapa-leyenda" id="leyenda-sst">
+      <div style="font-weight:700;font-size:0.72rem;margin-bottom:2px;">🌊 Temp. Superficial Mar</div>
+      <canvas id="sst-leyenda-canvas" width="150" height="12"></canvas>
+      <div class="sst-leyenda-ticks">
+        <span>14°C</span><span>20°</span><span>26°</span><span>32°C</span>
+      </div>
+      <div id="sst-leyenda-rango" style="font-size:0.62rem;color:var(--texto-suave);margin-top:3px;text-align:center;">—</div>
+    </div>
+
+    <!-- Panel WWLLN — navegador de días -->
+    <div id="wwlln-panel">
+      <div class="panel-capa-header">
+        ⚡ Rayos WWLLN &mdash; <span id="wwlln-fecha-display">Cargando...</span>
+      </div>
+      <div id="wwlln-dias-grid">
+        <!-- Botones de días generados por JS -->
+        <div style="grid-column:1/-1;color:var(--texto-suave);padding:10px 0;font-size:0.72rem;">Cargando historial...</div>
+      </div>
+      <div id="wwlln-status">⚡ Red WWLLN · CU Tlaquepaque UdeG · Único sensor en México</div>
+    </div>
+
+    <!-- Leyenda WWLLN -->
+    <div class="mapa-leyenda" id="leyenda-wwlln">
+      <div style="font-weight:700;margin-bottom:4px;font-size:0.72rem;">⚡ Antigüedad del rayo</div>
+      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#FFFF00;border:1px solid #ccc"></div>0-10 min</div>
+      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#00FF00"></div>10-20 min</div>
+      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#00CDFF"></div>20-30 min</div>
+      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#007FFF"></div>30-40 min</div>
+      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#0000FF"></div>40-50 min</div>
+      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#00008B"></div>50-60 min</div>
+    </div>
+
   </div>
 </div>
 
@@ -2578,8 +2763,18 @@ let radarFrames     = [];   // todos los frames past de RainViewer
 let radarFrameIdx   = 0;    // frame actualmente mostrado
 let radarPlayInt    = null; // intervalo de animación
 
+// Decide si leyenda-temperatura debe verse según el estado de todas las capas
+function actualizarLeyendaTemperatura() {
+  const algunaCapaActiva = sateliteActivo || lstActivo || sstActivo || wwllnActivo;
+  document.getElementById("leyenda-temperatura").classList.toggle("hidden", algunaCapaActiva);
+}
+
 function mostrarLeyendaRadar(visible) {
-  document.getElementById("leyenda-temperatura").style.display = visible ? "none" : "";
+  if (visible) {
+    document.getElementById("leyenda-temperatura").classList.add("hidden");
+  } else {
+    actualizarLeyendaTemperatura();
+  }
   document.getElementById("leyenda-radar").classList.toggle("visible", visible);
   document.getElementById("radar-panel").classList.toggle("visible", visible);
 }
@@ -2697,8 +2892,8 @@ async function toggleSatelite() {
     return;
   }
 
-  // Desactivar LST si estaba activa
-  if (lstActivo) toggleLST();
+  // Desactivar todas las otras capas exclusivas
+  desactivarTodasCapas('satelite');
 
   btn.textContent = "⏳ Cargando...";
   btn.disabled = true;
@@ -2851,20 +3046,28 @@ function generarLeyendaLSTdesdeNASA(fecha) {
       ctx.fillRect(Math.floor(i * paso), 0, Math.ceil(paso) + 1, H);
     });
 
-    // Bordes redondeados
-    ctx.globalCompositeOperation = "destination-in";
-    const r = 5;
-    ctx.beginPath();
-    ctx.roundRect(0, 0, W, H, r);
-    ctx.fill();
-    ctx.globalCompositeOperation = "source-over";
+    // Bordes redondeados (con fallback para navegadores sin roundRect)
+    try {
+      ctx.globalCompositeOperation = "destination-in";
+      ctx.beginPath();
+      ctx.roundRect(0, 0, W, H, 5);
+      ctx.fill();
+    } catch (_) {
+      // roundRect no disponible, el canvas se muestra sin esquinas redondeadas
+    } finally {
+      ctx.globalCompositeOperation = "source-over";
+    }
   };
   img.onerror = () => {}; // mantener gradiente provisional si falla
   img.src = tileUrl;
 }
 
 function mostrarLeyendaLST(visible) {
-  document.getElementById("leyenda-temperatura").style.display = visible ? "none" : "";
+  if (visible) {
+    document.getElementById("leyenda-temperatura").classList.add("hidden");
+  } else {
+    actualizarLeyendaTemperatura();
+  }
   document.getElementById("leyenda-lst").classList.toggle("visible", visible);
   document.getElementById("lst-panel").classList.toggle("visible", visible);
 }
@@ -2873,7 +3076,8 @@ function cargarLSTCapaFecha(fechaStr) {
   if (capaLST) { mapaLeaflet.removeLayer(capaLST); capaLST = null; }
   const url = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Land_Surface_Temp_Day/default/${fechaStr}/GoogleMapsCompatible_Level7/{z}/{y}/{x}.png`;
   capaLST = L.tileLayer(url, {
-    opacity: 0.80, zIndex: 6, maxZoom: 7,
+    opacity: 0.80, zIndex: 6,
+    maxNativeZoom: 7,  // MODIS LST solo tiene tiles hasta zoom 7; Leaflet escala para zooms mayores
     attribution: '🌡️ <a href="https://nasa.gov" target="_blank">NASA MODIS · LST</a>'
   }).addTo(mapaLeaflet);
   document.getElementById("lst-fecha-display").textContent = fechaStr;
@@ -2884,8 +3088,8 @@ function cargarLSTCapaFecha(fechaStr) {
 
 function cargarLSTHoy() {
   const hoy = new Date();
-  // MODIS LST tiene ~1 día de retraso; usar ayer para asegurar disponibilidad
-  hoy.setDate(hoy.getDate() - 1);
+  // MODIS LST tiene 2-3 días de retraso (procesamiento NASA + posible cobertura nubosa)
+  hoy.setDate(hoy.getDate() - 2);
   const fechaStr = hoy.toISOString().slice(0, 10);
   document.getElementById("lst-fecha").value = fechaStr;
   cargarLSTCapaFecha(fechaStr);
@@ -2897,29 +3101,545 @@ function cargarLSTFecha() {
   cargarLSTCapaFecha(fecha);
 }
 
-function toggleLST() {
-  const btn = document.getElementById("btn-lst");
+/* ──────────────────────────────────────────
+   CONTROL CENTRALIZADO DE CAPAS
+   Garantiza que solo una capa exclusiva esté activa a la vez.
+   ────────────────────────────────────────── */
+function _apagarSatelite() {
+  if (!sateliteActivo) return;
+  if (typeof radarPause === 'function') radarPause();
+  if (capaSatelite) { mapaLeaflet.removeLayer(capaSatelite); capaSatelite = null; }
+  if (intervalSatelite) { clearInterval(intervalSatelite); intervalSatelite = null; }
+  radarFrames = [];
+  sateliteActivo = false;
+  const b = document.getElementById("btn-satelite");
+  if (b) { b.classList.remove("activo"); b.textContent = "🌧️ Lluvia"; b.disabled = false; }
+  mostrarLeyendaRadar(false);
+}
+function _apagarLST() {
+  if (!lstActivo) return;
+  if (capaLST) { mapaLeaflet.removeLayer(capaLST); capaLST = null; }
+  lstActivo = false;
+  const b = document.getElementById("btn-lst");
+  if (b) { b.classList.remove("activo"); b.textContent = "🌡️ Temp. Sup."; }
+  mostrarLeyendaLST(false);
+}
+function _apagarSST() {
+  if (!sstActivo) return;
+  if (sstTileLayer)   { mapaLeaflet.removeLayer(sstTileLayer);   sstTileLayer   = null; }
+  if (sstPuntosLayer) { mapaLeaflet.removeLayer(sstPuntosLayer); sstPuntosLayer = null; }
+  sstActivo = false;
+  const b = document.getElementById("btn-sst");
+  if (b) { b.classList.remove("activo"); b.textContent = "🌊 Temp. Mar"; }
+  mostrarLeyendaSST(false);
+}
+function _apagarWWLLN() {
+  if (!wwllnActivo) return;
+  if (wwllnLayer) { mapaLeaflet.removeLayer(wwllnLayer); wwllnLayer = null; }
+  wwllnActivo = false;
+  const b = document.getElementById("btn-wwlln");
+  if (b) { b.classList.remove("activo"); b.textContent = "⚡ Rayos"; }
+  mostrarLeyendaWWLLN(false);
+}
+// Apaga todas las capas exclusivas excepto la indicada
+function desactivarTodasCapas(excluir = null) {
+  if (excluir !== 'satelite') _apagarSatelite();
+  if (excluir !== 'lst')      _apagarLST();
+  if (excluir !== 'sst')      _apagarSST();
+  if (excluir !== 'wwlln')    _apagarWWLLN();
+  // Restaurar marcadores si todas las capas exclusivas quedaron apagadas
+  if (!sateliteActivo && !lstActivo && !sstActivo && !wwllnActivo) restaurarMarcadores();
+}
 
+function toggleLST() {
   if (lstActivo) {
-    if (capaLST) { mapaLeaflet.removeLayer(capaLST); capaLST = null; }
-    lstActivo = false;
-    btn.classList.remove("activo");
-    btn.textContent = "🌡️ Temp. Sup.";
+    _apagarLST();
     restaurarMarcadores();
-    mostrarLeyendaLST(false);
+    return;
+  }
+  desactivarTodasCapas('lst');
+  ocultarMarcadores();
+  lstActivo = true;
+  const btn = document.getElementById("btn-lst");
+  btn.classList.add("activo");
+  mostrarLeyendaLST(true);
+  cargarLSTHoy();
+}
+
+/* ══════════════════════════════════════════
+   CAPA SST — Temperatura Superficial del Mar
+   Fuentes:
+     · NASA GIBS: GHRSST_L4_MUR_Sea_Surface_Temperature (tiles océano, 1km diario)
+     · NOAA CoralTemp ERDDAP: puntos costeros exactos (5km diario)
+   ══════════════════════════════════════════ */
+let sstActivo   = false;
+let sstTileLayer = null;
+let sstPuntosLayer = null;
+
+// Paleta de color SST: 14°C (azul frío) → 34°C (rojo cálido)
+// Igual que la escala física del océano mexicano
+const SST_MIN = 14, SST_MAX = 34;
+const SST_PASOS = [
+  { t: 14, r: 0,   g: 0,   b: 180 },  // azul oscuro
+  { t: 18, r: 0,   g: 120, b: 255 },  // azul medio
+  { t: 21, r: 0,   g: 210, b: 230 },  // cian
+  { t: 24, r: 0,   g: 210, b: 80  },  // verde-agua
+  { t: 26, r: 180, g: 230, b: 0   },  // verde-amarillo
+  { t: 28, r: 255, g: 200, b: 0   },  // amarillo-naranja
+  { t: 30, r: 255, g: 90,  b: 0   },  // naranja
+  { t: 32, r: 220, g: 0,   b: 0   },  // rojo
+  { t: 34, r: 140, g: 0,   b: 60  },  // rojo oscuro
+];
+
+function sstColor(t) {
+  if (t === null || isNaN(t)) return "#888";
+  const clamp = Math.max(SST_MIN, Math.min(SST_MAX, t));
+  // Interpolación lineal entre pasos
+  for (let i = 0; i < SST_PASOS.length - 1; i++) {
+    const a = SST_PASOS[i], b = SST_PASOS[i + 1];
+    if (clamp >= a.t && clamp <= b.t) {
+      const f = (clamp - a.t) / (b.t - a.t);
+      const ri = Math.round(a.r + f * (b.r - a.r));
+      const gi = Math.round(a.g + f * (b.g - a.g));
+      const bi = Math.round(a.b + f * (b.b - a.b));
+      return `rgb(${ri},${gi},${bi})`;
+    }
+  }
+  return `rgb(${SST_PASOS[SST_PASOS.length-1].r},${SST_PASOS[SST_PASOS.length-1].g},${SST_PASOS[SST_PASOS.length-1].b})`;
+}
+
+function sstRecomendacion(t) {
+  if (t === null || isNaN(t)) return { texto: "Sin datos", color: "#888", bg: "#f5f5f5" };
+  if (t < 20) return { texto: "🥶 Muy fría — No recomendada para nadar",     color: "#0050b3", bg: "#e6f0ff" };
+  if (t < 23) return { texto: "🌊 Fría — Solo para valientes",                color: "#0077cc", bg: "#d6eeff" };
+  if (t < 26) return { texto: "😊 Fresca — Agradable para nadar",             color: "#006644", bg: "#d6f5e6" };
+  if (t < 28) return { texto: "🏖️ Ideal — Perfecta para la playa",            color: "#5a6b2a", bg: "#edf5d0" };
+  if (t < 30) return { texto: "😍 Cálida — Excelente, aguas tropicales",      color: "#b85a30", bg: "#fff0e6" };
+  return               { texto: "🌡️ Muy cálida — Mar tipo jacuzzi",            color: "#c0392b", bg: "#ffeae8" };
+}
+
+// Dibuja la barra de temperatura calibrada en un canvas dado
+function dibujarBarraSST(canvasId, min = SST_MIN, max = SST_MAX) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  // Gradiente continuo basado en SST_PASOS
+  const grad = ctx.createLinearGradient(0, 0, W, 0);
+  SST_PASOS.forEach(p => {
+    const pos = (p.t - SST_MIN) / (SST_MAX - SST_MIN);
+    if (pos >= 0 && pos <= 1)
+      grad.addColorStop(pos, `rgb(${p.r},${p.g},${p.b})`);
+  });
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  // Bordes redondeados (con fallback para navegadores sin roundRect)
+  try {
+    ctx.globalCompositeOperation = "destination-in";
+    ctx.beginPath(); ctx.roundRect(0, 0, W, H, 4); ctx.fill();
+  } catch (_) {
+    // roundRect no disponible, se muestra el gradiente sin recorte redondeado
+  } finally {
+    ctx.globalCompositeOperation = "source-over";
+  }
+}
+
+// Puntos costeros clave de México para mostrar temperatura real
+const SST_PUNTOS_COSTA = [
+  // ── Pacífico ──────────────────────────────────
+  { nombre:"Ensenada",       lat:31.86, lon:-116.60, zona:"Pacífico" },
+  { nombre:"Cabo San Lucas", lat:22.88, lon:-109.92, zona:"Pacífico" },
+  { nombre:"Mazatlán",       lat:23.23, lon:-106.41, zona:"Pacífico" },
+  { nombre:"San Blas",       lat:21.54, lon:-105.30, zona:"Pacífico" },
+  { nombre:"Sayulita",       lat:20.87, lon:-105.44, zona:"Pacífico" },
+  { nombre:"Pto. Vallarta",  lat:20.62, lon:-105.25, zona:"Pacífico" },
+  { nombre:"Barra de Navidad",lat:19.19,lon:-104.68, zona:"Pacífico" },
+  { nombre:"Manzanillo",     lat:19.05, lon:-104.32, zona:"Pacífico" },
+  { nombre:"Ixtapa",         lat:17.67, lon:-101.64, zona:"Pacífico" },
+  { nombre:"Zihuatanejo",    lat:17.64, lon:-101.55, zona:"Pacífico" },
+  { nombre:"Acapulco",       lat:16.84, lon:-99.90,  zona:"Pacífico" },
+  { nombre:"Pto. Escondido", lat:15.86, lon:-97.07,  zona:"Pacífico" },
+  { nombre:"Huatulco",       lat:15.76, lon:-96.13,  zona:"Pacífico" },
+  { nombre:"Salina Cruz",    lat:16.17, lon:-95.20,  zona:"Pacífico" },
+  // ── Golfo de México ────────────────────────────
+  { nombre:"Playa Bagdad",   lat:25.84, lon:-97.12,  zona:"Golfo" },
+  { nombre:"Tampico",        lat:22.49, lon:-97.85,  zona:"Golfo" },
+  { nombre:"Tuxpan",         lat:20.96, lon:-97.33,  zona:"Golfo" },
+  { nombre:"Veracruz",       lat:19.18, lon:-96.08,  zona:"Golfo" },
+  { nombre:"Alvarado",       lat:18.78, lon:-95.76,  zona:"Golfo" },
+  { nombre:"Cd. del Carmen", lat:18.65, lon:-91.83,  zona:"Golfo" },
+  { nombre:"Campeche",       lat:19.84, lon:-90.52,  zona:"Golfo" },
+  { nombre:"Progreso",       lat:21.28, lon:-89.67,  zona:"Golfo" },
+  // ── Caribe ─────────────────────────────────────
+  { nombre:"Holbox",         lat:21.52, lon:-87.38,  zona:"Caribe" },
+  { nombre:"Cancún",         lat:21.14, lon:-86.85,  zona:"Caribe" },
+  { nombre:"Playa del Carmen",lat:20.63,lon:-87.07,  zona:"Caribe" },
+  { nombre:"Cozumel",        lat:20.50, lon:-86.96,  zona:"Caribe" },
+  { nombre:"Tulum",          lat:20.21, lon:-87.46,  zona:"Caribe" },
+  { nombre:"Chetumal",       lat:18.50, lon:-88.31,  zona:"Caribe" },
+];
+
+// IDs de referencia para los 4 cuadros del panel
+const SST_REF = {
+  pacifico: { punto:"Pto. Vallarta", elemId:"sst-val-pacifico" },
+  caribe:   { punto:"Cancún",        elemId:"sst-val-caribe"   },
+  golfo:    { punto:"Veracruz",      elemId:"sst-val-golfo"    },
+  acapulco: { punto:"Acapulco",      elemId:"sst-val-acapulco" },
+};
+
+async function cargarSSTCostera(fechaStr) {
+  // NOAA CoralTemp ERDDAP: obtener SST para bounding box México
+  // stride=5 → resolución ~0.25° → buena cobertura sin exceso de datos
+  const url =
+    `https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.json` +
+    `?CRW_SST[(${fechaStr}T12:00:00Z)]` +
+    `[13.9:5:33.1][-122.1:5:-76.0]`;
+
+  let sst_grid = null;
+  try {
+    const r  = await fetch(url);
+    const gj = await r.json();
+    // gj.table.rows = [ [time, lat, lon, sst], ... ]
+    const rows = gj.table?.rows || [];
+    sst_grid = rows
+      .filter(row => row[3] !== null && !isNaN(row[3]))
+      .map(row => ({ lat: row[1], lon: row[2], sst: row[3] }));
+  } catch (e) {
+    console.warn("ERDDAP CoralTemp no disponible:", e);
+    return null;
+  }
+  return sst_grid;
+}
+
+function encontrarSSTCercana(sst_grid, lat, lon) {
+  if (!sst_grid || !sst_grid.length) return null;
+  let mejor = null, minDist = Infinity;
+  for (const pt of sst_grid) {
+    const d = Math.hypot(pt.lat - lat, pt.lon - lon);
+    if (d < minDist) { minDist = d; mejor = pt.sst; }
+  }
+  return (minDist < 1.5) ? mejor : null; // máx ~150km de distancia
+}
+
+function pintarPuntosCostera(sst_grid) {
+  if (sstPuntosLayer) { mapaLeaflet.removeLayer(sstPuntosLayer); sstPuntosLayer = null; }
+  sstPuntosLayer = L.layerGroup();
+
+  let tempMin = Infinity, tempMax = -Infinity;
+  const puntosConTemp = [];
+
+  SST_PUNTOS_COSTA.forEach(p => {
+    const sst = encontrarSSTCercana(sst_grid, p.lat, p.lon);
+    if (sst === null) return;
+    if (sst < tempMin) tempMin = sst;
+    if (sst > tempMax) tempMax = sst;
+    puntosConTemp.push({ ...p, sst });
+  });
+
+  puntosConTemp.forEach(p => {
+    const color = sstColor(p.sst);
+    const rec   = sstRecomendacion(p.sst);
+    L.circleMarker([p.lat, p.lon], {
+      radius: 8, color: "#fff", weight: 1.5,
+      fillColor: color, fillOpacity: 0.92,
+    }).bindPopup(
+      `<b>🌊 ${p.nombre}</b> <small style="color:#888">${p.zona}</small><br>` +
+      `<span style="font-size:1.3em;font-weight:700;color:${color}">${p.sst.toFixed(1)}°C</span><br>` +
+      `<span style="font-size:0.85em">${rec.texto}</span><br>` +
+      `<small style="color:#888">NOAA CoralTemp · datos diarios</small>`
+    ).addTo(sstPuntosLayer);
+  });
+
+  sstPuntosLayer.addTo(mapaLeaflet);
+
+  // Actualizar cuadros del panel con datos reales
+  const pMap = {};
+  puntosConTemp.forEach(p => { pMap[p.nombre] = p.sst; });
+  Object.values(SST_REF).forEach(ref => {
+    const val = pMap[ref.punto];
+    const el  = document.getElementById(ref.elemId);
+    if (el) {
+      if (val !== undefined) {
+        el.textContent = `${val.toFixed(1)}°C`;
+        el.style.color = sstColor(val);
+      } else {
+        el.textContent = "Sin datos";
+      }
+    }
+  });
+
+  // Recomendación general basada en Pacífico Jalisco
+  const tempRef = pMap["Pto. Vallarta"] || pMap["Manzanillo"] || puntosConTemp[0]?.sst;
+  const rec = sstRecomendacion(tempRef);
+  const elRec = document.getElementById("sst-recomendacion");
+  if (elRec) {
+    elRec.textContent  = rec.texto;
+    elRec.style.color  = rec.color;
+    elRec.style.background = rec.bg;
+    elRec.style.borderColor = rec.color + "44";
+  }
+
+  // Actualizar leyenda con rango real
+  const rangoEl = document.getElementById("sst-leyenda-rango");
+  if (rangoEl && tempMin !== Infinity)
+    rangoEl.textContent = `Rango actual: ${tempMin.toFixed(1)}°C – ${tempMax.toFixed(1)}°C`;
+
+  return { min: tempMin, max: tempMax };
+}
+
+function mostrarLeyendaSST(visible) {
+  if (visible) {
+    document.getElementById("leyenda-temperatura").classList.add("hidden");
+  } else {
+    actualizarLeyendaTemperatura();
+  }
+  document.getElementById("leyenda-sst").classList.toggle("visible", visible);
+  document.getElementById("sst-panel").classList.toggle("visible", visible);
+}
+
+async function activarSST() {
+  const btn = document.getElementById("btn-sst");
+  btn.textContent = "🌊 Cargando...";
+
+  // Fecha: ayer (1 día de retraso en CoralTemp)
+  const ayer = new Date();
+  ayer.setDate(ayer.getDate() - 1);
+  const fechaStr = ayer.toISOString().slice(0, 10);
+
+  document.getElementById("sst-fecha-display").textContent = fechaStr;
+
+  // 1. Tile NASA GIBS MUR SST (fondo oceánico)
+  const gibs_url =
+    `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/` +
+    `GHRSST_L4_MUR_Sea_Surface_Temperature/default/${fechaStr}/` +
+    `GoogleMapsCompatible_Level7/{z}/{y}/{x}.png`;
+  sstTileLayer = L.tileLayer(gibs_url, {
+    opacity: 0.60, zIndex: 5, maxZoom: 8,
+    attribution: '🌊 <a href="https://mur.jpl.nasa.gov" target="_blank">NASA MUR SST · JPL</a>',
+    errorTileUrl: "",  // silenciar errores de tiles sin datos
+  }).addTo(mapaLeaflet);
+
+  // 2. Puntos costeros con ERDDAP CoralTemp
+  const sst_grid = await cargarSSTCostera(fechaStr);
+
+  if (sst_grid && sst_grid.length) {
+    pintarPuntosCostera(sst_grid);
+  } else {
+    // Fallback: mostrar solo los tiles sin puntos
+    document.getElementById("sst-recomendacion").textContent = "Sin datos puntuales disponibles hoy.";
+  }
+
+  // 3. Dibujar barras de temperatura calibradas
+  dibujarBarraSST("sst-canvas-barra");
+  dibujarBarraSST("sst-leyenda-canvas");
+
+  btn.textContent = "🌊 Temp. Mar ✓";
+  btn.classList.add("activo");
+}
+
+async function toggleSST() {
+  if (sstActivo) {
+    _apagarSST();
+    restaurarMarcadores();
     return;
   }
 
-  // Desactivar lluvia si estaba activa (capas se excluyen)
-  if (sateliteActivo) toggleSatelite();
-
+  // Desactivar todas las otras capas exclusivas
+  desactivarTodasCapas('sst');
   ocultarMarcadores();
-  lstActivo = true;
-  btn.classList.add("activo");
-  mostrarLeyendaLST(true);
 
-  // Poner fecha de ayer por defecto y cargar
-  cargarLSTHoy();
+  // Marcar activo DESPUÉS de confirmar activación
+  mostrarLeyendaSST(true);
+  try {
+    await activarSST();
+    sstActivo = true;
+  } catch (e) {
+    console.error("Error activando SST:", e);
+    mostrarLeyendaSST(false);
+    restaurarMarcadores();
+  }
+}
+
+/* ══════════════════════════════════════════
+   CAPA RAYOS WWLLN
+   ══════════════════════════════════════════ */
+let wwllnActivo      = false;
+let wwllnLayer       = null;   // L.LayerGroup con círculos del día seleccionado
+let wwllnDias        = [];     // lista de días disponibles (del index.json)
+let wwllnDiaActual   = null;   // fecha seleccionada "YYYY-MM-DD"
+
+// Ruta base relativa al HTML (los archivos wwlln/ están junto a index.html)
+const WWLLN_BASE = "wwlln/";
+
+function mostrarLeyendaWWLLN(visible) {
+  if (visible) {
+    document.getElementById("leyenda-temperatura").classList.add("hidden");
+  } else {
+    actualizarLeyendaTemperatura();
+  }
+  document.getElementById("leyenda-wwlln").classList.toggle("visible", visible);
+  document.getElementById("wwlln-panel").classList.toggle("visible", visible);
+}
+
+async function cargarIndiceWWLLN() {
+  try {
+    const r   = await fetch(WWLLN_BASE + "index.json?_=" + Date.now());
+    const idx = await r.json();
+    wwllnDias = idx.dias || [];
+    renderizarGridDias();
+    return true;
+  } catch (e) {
+    console.warn("WWLLN index.json no disponible:", e);
+    document.getElementById("wwlln-dias-grid").innerHTML =
+      '<div style="grid-column:1/-1;padding:12px;color:var(--terracota);font-size:0.72rem;line-height:1.6;">' +
+      '⚡ <b>Sin datos WWLLN todavía.</b><br>' +
+      'Ejecutar en el servidor:<br>' +
+      '<code style="background:#f4f0e8;padding:2px 5px;border-radius:3px;font-size:0.68rem;">python backend/wwlln_updater.py</code><br>' +
+      '<span style="color:var(--texto-suave)">El script descarga datos en tiempo real de la red WWLLN.</span>' +
+      '</div>';
+    document.getElementById("wwlln-status").textContent = "⚡ Sin datos · Ejecuta wwlln_updater.py";
+    return false;
+  }
+}
+
+function renderizarGridDias() {
+  const grid = document.getElementById("wwlln-dias-grid");
+  if (!wwllnDias.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:10px;color:var(--texto-suave);font-size:0.72rem;">Sin datos todavía.</div>';
+    return;
+  }
+  grid.innerHTML = "";
+  wwllnDias.forEach(dia => {
+    const d     = new Date(dia.fecha + "T12:00:00Z");
+    const mes   = d.toLocaleDateString("es-MX", { month: "short", timeZone: "UTC" });
+    const num   = d.getUTCDate();
+    const esHoy = dia.fecha === new Date().toISOString().slice(0, 10);
+    const btn   = document.createElement("button");
+    btn.className = "wwlln-dia-btn" + (esHoy ? " activo" : "");
+    btn.dataset.fecha = dia.fecha;
+    btn.innerHTML =
+      `<span class="dia-num">${num} ${mes}</span>` +
+      `<span class="dia-rayos">⚡${dia.total_dia ?? "?"}</span>`;
+    btn.title = `${dia.fecha} · ${dia.total_dia ?? "?"} rayos`;
+    btn.onclick = () => seleccionarDiaWWLLN(dia.fecha);
+    grid.appendChild(btn);
+  });
+}
+
+async function seleccionarDiaWWLLN(fecha) {
+  // Resaltar botón seleccionado
+  document.querySelectorAll(".wwlln-dia-btn").forEach(b =>
+    b.classList.toggle("activo", b.dataset.fecha === fecha)
+  );
+  wwllnDiaActual = fecha;
+  document.getElementById("wwlln-fecha-display").textContent = fecha;
+  document.getElementById("wwlln-status").textContent = "⏳ Cargando rayos...";
+
+  // Retirar capa anterior
+  if (wwllnLayer) { mapaLeaflet.removeLayer(wwllnLayer); wwllnLayer = null; }
+
+  // Buscar el snapshot más reciente del día (último en el array)
+  const diaObj    = wwllnDias.find(d => d.fecha === fecha);
+  const snapshots = diaObj?.snapshots || [];
+  if (!snapshots.length) {
+    document.getElementById("wwlln-status").textContent = "Sin datos para este día.";
+    return;
+  }
+  // Cargar el último snapshot del día (más reciente)
+  const archivo = snapshots[snapshots.length - 1].archivo;
+
+  try {
+    const r  = await fetch(WWLLN_BASE + archivo + "?_=" + Date.now());
+    const gj = await r.json();
+    pintarRayosWWLLN(gj);
+    const total = gj.total_rayos ?? gj.features?.length ?? 0;
+    document.getElementById("wwlln-status").textContent =
+      `⚡ ${total} rayos · ${gj.hora_utc ?? ""} · WWLLN · CU Tlaquepaque`;
+  } catch (e) {
+    console.warn("Error cargando WWLLN:", e);
+    document.getElementById("wwlln-status").textContent = "Error al cargar datos.";
+  }
+}
+
+function pintarRayosWWLLN(geojson) {
+  if (wwllnLayer) { mapaLeaflet.removeLayer(wwllnLayer); }
+  wwllnLayer = L.layerGroup();
+
+  (geojson.features || []).forEach(f => {
+    const [lon, lat] = f.geometry.coordinates;
+    const p = f.properties;
+    L.circleMarker([lat, lon], {
+      radius:      4,
+      color:       p.color || "#FFFF00",
+      fillColor:   p.color || "#FFFF00",
+      fillOpacity: 0.85,
+      weight:      0.5,
+      opacity:     0.9,
+    }).bindPopup(
+      `<b>⚡ Rayo WWLLN</b><br>` +
+      `🕐 ${p.hora || ""}<br>` +
+      `📍 ${lat.toFixed(4)}°N, ${lon.toFixed(4)}°W<br>` +
+      `⏱ ${p.antiguedad || ""}<br>` +
+      `📡 ${p.estaciones ?? "?"} estaciones detectoras<br>` +
+      `<small style="color:#888">Red WWLLN · CU Tlaquepaque UdeG</small>`
+    ).addTo(wwllnLayer);
+  });
+
+  wwllnLayer.addTo(mapaLeaflet);
+}
+
+async function toggleWWLLN() {
+  const btn = document.getElementById("btn-wwlln");
+
+  if (wwllnActivo) {
+    _apagarWWLLN();
+    restaurarMarcadores();
+    return;
+  }
+
+  // WWLLN es exclusivo: apaga todas las demás capas primero
+  desactivarTodasCapas('wwlln');
+  ocultarMarcadores();
+
+  wwllnActivo = true;
+  btn.classList.add("activo");
+  btn.textContent = "⚡ Rayos ✓";
+  mostrarLeyendaWWLLN(true);
+
+  // Cargar índice y mostrar el día más reciente automáticamente
+  const ok = await cargarIndiceWWLLN();
+  if (ok && wwllnDias.length) {
+    seleccionarDiaWWLLN(wwllnDias[0].fecha);
+  }
+}
+
+/* ══════════════════════════════════════════
+   AUTO-DESCARGA WWLLN — primera visita del día
+   El navegador llama al endpoint PHP en segundo plano.
+   Si el servidor tiene PHP + shell_exec, descarga datos frescos.
+   Si no, simplemente no hace nada (sin errores visibles al usuario).
+   ══════════════════════════════════════════ */
+async function verificarDatosWWLLN() {
+  // El servidor decide si hay que descargar o no (basado en la edad del archivo).
+  // Regla: si el index.json tiene menos de 6 horas → respuesta rápida, sin trabajo.
+  //        si tiene 6+ horas o no existe → ejecuta wwlln_updater.py.
+  // No hay restricción por usuario: cualquier visita puede disparar la descarga
+  // una vez que hayan pasado 6 horas desde la anterior.
+  try {
+    const r = await fetch('backend/actualizar_wwlln.php?_=' + Date.now());
+    if (!r.ok) return;
+    const data = await r.json();
+    if (data.status === 'actualizado') {
+      console.log('🌩️ WWLLN: datos actualizados por esta visita');
+    } else if (data.status === 'ok') {
+      console.log(`🌩️ WWLLN: datos recientes (${data.edad_h}h), siguiente descarga en ${data.proximo_h}h`);
+    } else {
+      console.warn('🌩️ WWLLN:', data.mensaje);
+    }
+  } catch (_) {
+    // Silencioso: el servidor no tiene PHP o está fuera de línea
+    console.info('🌩️ WWLLN auto-check no disponible');
+  }
 }
 
 /* ──────────────────────────────────────────
@@ -2969,6 +3689,10 @@ window.addEventListener("load", () => {
   // Lanzar pronóstico primero; el mapa arranca 800ms después para no saturar conexiones
   buscarMunicipio(ciudadInicial);
   setTimeout(() => cargarDatosMapa(), 800);
+
+  // Auto-descarga WWLLN en segundo plano (una vez por día, silencioso)
+  // Si el servidor tiene PHP+shell_exec actualiza los datos; si no, no hace nada
+  setTimeout(() => verificarDatosWWLLN(), 3000);
 });
 
 </script>
