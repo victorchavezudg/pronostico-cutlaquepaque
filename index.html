@@ -1396,13 +1396,13 @@
 
     <!-- Leyenda WWLLN -->
     <div class="mapa-leyenda" id="leyenda-wwlln">
-      <div style="font-weight:700;margin-bottom:4px;font-size:0.72rem;">⚡ Antigüedad del rayo</div>
-      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#FFFF00;border:1px solid #ccc"></div>0-10 min</div>
-      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#00FF00"></div>10-20 min</div>
-      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#00CDFF"></div>20-30 min</div>
-      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#007FFF"></div>30-40 min</div>
-      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#0000FF"></div>40-50 min</div>
-      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#00008B"></div>50-60 min</div>
+      <div style="font-weight:700;margin-bottom:4px;font-size:0.72rem;">⚡ Rayos por zona (1°×1°)</div>
+      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#FFF176;border:1px solid #ccc;border-radius:2px"></div>1 – 5</div>
+      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#FFB300;border-radius:2px"></div>6 – 15</div>
+      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#F57C00;border-radius:2px"></div>16 – 30</div>
+      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#E53935;border-radius:2px"></div>31 – 60</div>
+      <div class="wwlln-leyenda-item"><div class="wwlln-leyenda-dot" style="background:#880E4F;border-radius:2px"></div>&gt; 60</div>
+      <div style="font-size:0.60rem;color:var(--texto-suave);margin-top:3px;">Fuente: WWLLN · CU Tlaquepaque</div>
     </div>
 
   </div>
@@ -3545,27 +3545,49 @@ async function seleccionarDiaWWLLN(fecha) {
   }
 }
 
+// Paleta de densidad WWLLN: conteo de rayos por celda 1°×1°
+function wwllnColorPorConteo(n) {
+  if (n <=  5) return { fill: "#FFF176", opacity: 0.55 };
+  if (n <= 15) return { fill: "#FFB300", opacity: 0.60 };
+  if (n <= 30) return { fill: "#F57C00", opacity: 0.65 };
+  if (n <= 60) return { fill: "#E53935", opacity: 0.70 };
+  return               { fill: "#880E4F", opacity: 0.80 };
+}
+
 function pintarRayosWWLLN(geojson) {
   if (wwllnLayer) { mapaLeaflet.removeLayer(wwllnLayer); }
   wwllnLayer = L.layerGroup();
 
-  (geojson.features || []).forEach(f => {
+  const features = geojson.features || [];
+  if (!features.length) { wwllnLayer.addTo(mapaLeaflet); return; }
+
+  // — Construir grid de densidad 1°×1° —
+  const PASO = 1.0;
+  const grid  = {};  // clave "lat_lon" → conteo
+
+  features.forEach(f => {
     const [lon, lat] = f.geometry.coordinates;
-    const p = f.properties;
-    L.circleMarker([lat, lon], {
-      radius:      4,
-      color:       p.color || "#FFFF00",
-      fillColor:   p.color || "#FFFF00",
-      fillOpacity: 0.85,
-      weight:      0.5,
-      opacity:     0.9,
+    const celLat = Math.floor(lat / PASO) * PASO;
+    const celLon = Math.floor(lon / PASO) * PASO;
+    const key    = `${celLat}_${celLon}`;
+    grid[key]    = (grid[key] || 0) + 1;
+  });
+
+  // — Dibujar una celda por cada cuadro con al menos 1 rayo —
+  Object.entries(grid).forEach(([key, conteo]) => {
+    const [celLat, celLon] = key.split("_").map(Number);
+    const bounds  = [[celLat, celLon], [celLat + PASO, celLon + PASO]];
+    const { fill, opacity } = wwllnColorPorConteo(conteo);
+
+    L.rectangle(bounds, {
+      color:       fill,
+      weight:      0.4,
+      fillColor:   fill,
+      fillOpacity: opacity,
     }).bindPopup(
-      `<b>⚡ Rayo WWLLN</b><br>` +
-      `🕐 ${p.hora || ""}<br>` +
-      `📍 ${lat.toFixed(4)}°N, ${lon.toFixed(4)}°W<br>` +
-      `⏱ ${p.antiguedad || ""}<br>` +
-      `📡 ${p.estaciones ?? "?"} estaciones detectoras<br>` +
-      `<small style="color:#888">Red WWLLN · CU Tlaquepaque UdeG</small>`
+      `<b>⚡ ${conteo} rayo${conteo > 1 ? "s" : ""}</b> detectado${conteo > 1 ? "s" : ""}<br>` +
+      `📍 Zona ${celLat}°–${celLat + PASO}°N, ${Math.abs(celLon + PASO)}°–${Math.abs(celLon)}°W<br>` +
+      `<small style="color:#888">WWLLN · CU Tlaquepaque UdeG · resolución 1°×1°</small>`
     ).addTo(wwllnLayer);
   });
 
