@@ -1368,7 +1368,7 @@
         </div>
       </div>
       <div style="font-size:0.62rem;color:var(--texto-suave);padding:0 14px 8px;text-align:center;">
-        Open-Meteo Marine · NASA GIBS MUR SST · Datos actuales
+        Open-Meteo Marine · Temperaturas actuales en playas de México
       </div>
     </div>
 
@@ -3383,34 +3383,15 @@ async function activarSST() {
   const btn = document.getElementById("btn-sst");
   btn.textContent = "🌊 Cargando...";
 
-  // Fecha: 2 días de retraso — NASA MUR SST tarda ~48h en publicar
-  // (ayer = 404, hace 2 días = 200 confirmado)
-  const ayer = new Date();
-  ayer.setDate(ayer.getDate() - 2);
-  const fechaStr = ayer.toISOString().slice(0, 10);
+  document.getElementById("sst-fecha-display").textContent =
+    new Date().toISOString().slice(0, 10);
 
-  document.getElementById("sst-fecha-display").textContent = fechaStr;
-
-  // 1. Tile NASA GIBS MUR SST (fondo oceánico)
-  //    maxNativeZoom:7 — los tiles GIBS solo existen hasta zoom 7;
-  //    Leaflet los escala automáticamente para zooms mayores.
-  const gibs_url =
-    `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/` +
-    `GHRSST_L4_MUR_Sea_Surface_Temperature/default/${fechaStr}/` +
-    `GoogleMapsCompatible_Level7/{z}/{y}/{x}.png`;
-  sstTileLayer = L.tileLayer(gibs_url, {
-    opacity: 0.60, zIndex: 5, maxNativeZoom: 7,
-    attribution: '🌊 <a href="https://mur.jpl.nasa.gov" target="_blank">NASA MUR SST · JPL</a>',
-    errorTileUrl: "",
-  }).addTo(mapaLeaflet);
-
-  // 2. Puntos costeros con Open-Meteo Marine (reemplaza ERDDAP — sin CORS)
+  // Puntos costeros con Open-Meteo Marine — paleta única, sin tile de fondo
   const puntos = await cargarSSTCostera();
 
   if (puntos && puntos.length) {
     pintarPuntosCostera(puntos);
   } else {
-    // Fallback: mostrar solo los tiles sin puntos
     document.getElementById("sst-recomendacion").textContent = "Sin datos puntuales disponibles hoy.";
   }
 
