@@ -1,0 +1,7 @@
+# Dependencias para actualizar_gfs.py
+# Instalar con: pip install -r requirements.txt
+
+xarray>=2023.1.0
+pydap>=3.4.0
+numpy>=1.24.0
+requests>=2.28.0

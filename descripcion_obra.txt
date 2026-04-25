@@ -1,0 +1,173 @@
+========================================================================
+DESCRIPCION DE OBRA PARA REGISTRO ANTE EL INDAUTOR
+Instituto Nacional del Derecho de Autor - Mexico
+========================================================================
+
+------------------------------------------------------------------------
+DATOS DE LA OBRA
+------------------------------------------------------------------------
+
+Titulo:            Sistema de Pronostico Climatologico CU Tlaquepaque
+                   (Pronostico Climatologico de Mexico | CU Tlaquepaque - UDG)
+
+Fecha de creacion: [MES] de 2025   <<< CONFIRMAR mes y anio exacto >>>
+
+Tipo de obra:      Programa de computo / Aplicacion web
+
+Institucion:       Centro de Estudios Medioambientales y de Servicios
+                   Academicos y Comunitarios — CU Tlaquepaque,
+                   Universidad de Guadalajara (UdeG)
+
+URL objetivo:      https://cutlaquepaque.udg.mx/clima
+
+------------------------------------------------------------------------
+AUTORES
+------------------------------------------------------------------------
+
+Autor 1: [NOMBRE COMPLETO LEGAL DEL AUTOR PRINCIPAL]   <<< COMPLETAR >>>
+         Correo: vm.chavez.p@gmail.com
+         Rol: Diseno, arquitectura, desarrollo y coordinacion del proyecto
+         Porcentaje de participacion: [  ]%
+
+Autor 2: [NOMBRE COMPLETO LEGAL DEL COAUTOR, SI APLICA]   <<< COMPLETAR >>>
+         Correo: [correo del coautor]
+         Rol: [describir rol del coautor]
+         Porcentaje de participacion: [  ]%
+
+NOTA: Si la obra es de autor unico, eliminar el bloque "Autor 2" y
+      asignar 100% al autor principal.
+
+------------------------------------------------------------------------
+DESCRIPCION GENERAL
+------------------------------------------------------------------------
+
+El Sistema de Pronostico Climatologico CU Tlaquepaque es una aplicacion
+web de codigo propio desarrollada en el Centro de Estudios Medioambientales
+y de Servicios Academicos y Comunitarios del Centro Universitario de
+Tlaquepaque, Universidad de Guadalajara. La aplicacion consume en tiempo
+real datos meteorologicos de modelos numericos globales (GFS 0.25 grados,
+NOAA/NOMADS) y satelitales (NASA GIBS/MODIS), y los visualiza sobre un
+mapa interactivo de Mexico con cobertura de temperatura, precipitacion,
+humedad relativa, viento, indice UV, calidad del aire, actividad electrica
+y radar de lluvia. Esta dirigida a la comunidad universitaria, investigadores,
+estudiantes y publico en general interesados en el estado del tiempo y el
+clima en Mexico, con enfasis en la region de Jalisco. El sistema genera
+automaticamente un boletin climatologico diario, alertas visuales y graficas
+horarias, contribuyendo a la difusion del conocimiento meteorologico y a la
+vinculacion comunitaria del CU Tlaquepaque.
+
+------------------------------------------------------------------------
+COMPONENTES ORIGINALES DE LA OBRA
+(Archivos de creacion propia que forman parte de la obra registrada)
+------------------------------------------------------------------------
+
+FRONTEND / INTERFAZ WEB:
+
+  index.html
+      Pagina principal del sistema de pronostico. Contiene la interfaz
+      de usuario completa: mapa interactivo de Mexico con capas
+      meteorologicas (temperatura GFS, radar de lluvia, temperatura
+      superficial NASA, rayos WWLLN), panel de condiciones actuales
+      (temperatura, humedad, viento, precipitacion, indice UV, AQI),
+      boletin climatologico automatico, graficas horarias, sistema de
+      alertas visuales, busqueda por municipio y codigo postal, y
+      disenio responsivo con paleta institucional CU Tlaquepaque.
+
+  pronostico-jalisco.html
+      Pagina secundaria del sistema, enfocada en la visualizacion
+      del pronostico meteorologico para el estado de Jalisco.
+
+BACKEND / SCRIPTS PYTHON:
+
+  backend/actualizar_gfs.py
+      Script principal de backend. Descarga y procesa automaticamente
+      los datos del modelo meteorologico GFS 0.25 grados desde los
+      servidores NOMADS de NOAA via protocolo OpenDAP. Extrae variables
+      (temperatura, punto de rocio, humedad, viento U/V, precipitacion,
+      nubosidad, presion) para la region de Mexico (14-33 N, 120-83.5 O)
+      con actualizacion cada 6 horas.
+
+  backend/wwlln_updater.py
+      Script de backend para la capa de actividad electrica. Descarga
+      datos de la red mundial de deteccion de rayos WWLLN, filtra los
+      registros correspondientes a Mexico y la region (10-36 N, 76-122 O),
+      genera archivos GeoJSON diarios y un indice de metadata, manteniendo
+      un historial de aproximadamente 20 dias (maximo 80 archivos).
+
+  backend/requirements.txt
+      Archivo de dependencias Python del proyecto. Define las versiones
+      minimas de las bibliotecas externas requeridas.
+
+SCRIPTS DE AUTOMATIZACION (Windows):
+
+  backend/instalar.bat
+      Script de configuracion e instalacion del entorno de ejecucion
+      local en sistemas Windows.
+
+  backend/actualizar_gfs.bat
+      Script de automatizacion para la ejecucion periodica del backend
+      en sistemas Windows.
+
+  Abrir Pagina.bat
+      Script para apertura local de la aplicacion web en entorno
+      de desarrollo.
+
+RECURSOS GRAFICOS INSTITUCIONALES:
+
+  BG_escudo-header-01.svg
+      Logotipo vectorial del CU Tlaquepaque utilizado en la cabecera
+      de la aplicacion.
+
+  CUTLAQUEPAQUE.png
+      Imagen institucional del Centro Universitario de Tlaquepaque.
+
+------------------------------------------------------------------------
+TECNOLOGIAS Y LIBRERIAS DE TERCEROS UTILIZADAS
+(No forman parte de la obra registrada — son herramientas de soporte)
+------------------------------------------------------------------------
+
+LENGUAJES Y ENTORNOS:
+  - Python 3.x                   (lenguaje de backend)
+  - HTML5 / CSS3 / JavaScript    (lenguaje de frontend)
+
+LIBRERIAS PYTHON (backend):
+  - xarray  >= 2023.1.0          (lectura de datos NetCDF/OpenDAP)
+  - pydap   >= 3.4.0             (cliente protocolo OpenDAP)
+  - numpy   >= 1.24.0            (calculo numerico)
+  - requests >= 2.28.0           (peticiones HTTP)
+
+LIBRERIAS JAVASCRIPT (frontend, cargadas via CDN):
+  - Leaflet.js                   (mapas interactivos)
+  - D3.js v7.9.0                 (contornos y visualizacion de datos)
+  - Chart.js                     (graficas horarias)
+
+FUENTES DE DATOS EXTERNAS (APIs publicas, no forman parte del codigo):
+  - NOAA GFS 0.25 deg via NOMADS/OpenDAP
+    (modelo numerico meteorologico global, dominio publico NOAA)
+  - NASA GIBS / MODIS
+    (tiles de temperatura superficial terrestre, dominio publico NASA)
+  - WWLLN - World Wide Lightning Location Network
+    (datos de actividad electrica global, licencia de uso academico)
+
+------------------------------------------------------------------------
+DECLARACION
+------------------------------------------------------------------------
+
+Los autores declaran que el codigo fuente, algoritmos, estructura y
+logica de programacion contenidos en esta obra son de su creacion
+original, a excepcion de las librerias y herramientas de terceros
+listadas anteriormente. La obra fue desarrollada en el marco de las
+actividades academicas y de investigacion del Centro de Estudios
+Medioambientales y de Servicios Academicos y Comunitarios del Centro
+Universitario de Tlaquepaque, Universidad de Guadalajara.
+
+Lugar de creacion: Tlaquepaque, Jalisco, Mexico
+Fecha de la declaracion: Abril de 2026
+
+Firma Autor 1: ____________________________
+
+Firma Autor 2: ____________________________   (si aplica)
+
+========================================================================
+FIN DEL DOCUMENTO
+========================================================================

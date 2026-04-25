@@ -1,0 +1,33 @@
+# ─────────────────────────────────────────────
+#  .gitignore  ·  Pronóstico Climatológico CU Tlaquepaque
+# ─────────────────────────────────────────────
+
+# Caches y compilados de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs locales (los regenera el cron)
+wwlln_log.txt
+*.log
+
+# Archivos comprimidos / respaldos pesados
+*.rar
+*.zip
+*.7z
+
+# Snapshots WWLLN: el cron del servidor los regenera cada 6 h.
+# Mantenemos solo el índice maestro y omitimos los GeoJSON individuales
+# para no inflar el repo (cada uno puede pesar ~80 KB y se rotan 80).
+wwlln/wwlln_*.geojson
+
+# Datos GFS regenerables
+datos_malla.json
+
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
