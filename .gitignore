@@ -17,12 +17,11 @@ wwlln_log.txt
 *.zip
 *.7z
 
-# Snapshots WWLLN: el cron del servidor los regenera cada 6 h.
-# Mantenemos solo el índice maestro y omitimos los GeoJSON individuales
-# para no inflar el repo (cada uno puede pesar ~80 KB y se rotan 80).
-wwlln/wwlln_*.geojson
+# NOTA: Los snapshots WWLLN/*.geojson SÍ se suben al repo,
+# porque GitHub Pages necesita servirlos (los Actions los regeneran cada 6 h
+# y la rotación interna del script mantiene máx. 80 archivos).
 
-# Datos GFS regenerables
+# Datos GFS regenerables (estos sí se omiten, pesan mucho y se regeneran)
 datos_malla.json
 
 # Editor / SO
